@@ -1,12 +1,21 @@
 Package: stHawkesTools
-Title: What the Package Does (One Line, Title Case)
+Title: Provide Tools for Bootstrapping General Spatio-Temporal Hawkes Processes
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Caleb", "Fox", , "caleb_fox2@ebaylor.edu", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-3992-6746"))
+Description: stHawkesTools is an R package for simulating, estimating, and analyzing spatio-temporal Hawkes processes. It supports flexible triggering kernels beyond those implemented in existing packages like ETAS, and provides simulation tools tailored for spatio-temporal settings. Parameter estimation is performed using the EM algorithm for maximum likelihood inference. The package also offers confidence intervals based on both asymptotic theory and a range of bootstrap methods. Additional utilities are included to support diagnostics and model-based analysis of spatio-temporal point process data.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Imports: 
+    dplyr,
+    furrr,
+    ggplot2,
+    purrr,
+    sf,
+    tibble
+Depends: 
+    R (>= 2.10)
+LazyData: true
