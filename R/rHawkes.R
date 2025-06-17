@@ -1,21 +1,4 @@
-# Functions to generate a spatio-temporal Hawkes process
-#
 
-
-#' Create an empty hawkes object
-#'
-#' @param region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).
-#' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list.
-##'
-#' @returns An empty hawkes object.
-.blank_hawkes <- function(params = NULL, region = NULL) {
-  new_hawkes(data = data.frame(x = numeric(), y = numeric(), t = numeric(), parent = numeric(), gen = numeric()),
-             params = params,
-             region = region,  # could be passed in or defaulted inside rhawkes
-             spatial_kernel = NULL,
-             temporal_kernel = NULL
-  )
-}
 
 
 #' Simulate background events
@@ -26,7 +9,7 @@
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
-#' @returns A hawkes object with only generated background events.
+#' @returns A dataframe with generated background events.
 #' @export
 #'
 #' @examples
@@ -85,7 +68,7 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
       dplyr::relocate(id)
   }
 
-  as_hawkes(df, region = region)
+  df
 }
 
 
@@ -97,8 +80,8 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
 #' @param t_burnin Temporal burn-in for simulation. Defaults to 50 if not used.
 #' @param s_burnin Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.
 #' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
-#' @param spatial_kernel A spatial triggering kernel function to generate data from. Defaults to rnorm if not used.
-#' @param temporal_kernel A spatial triggering kernel function to generate data from. Defaults to rexp if not used.
+#' @param spatial_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
+#' @param temporal_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -112,17 +95,21 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
 #' rHawkes(params, region)
 #'
 #' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
-#' rHawkes(params, region, spatial_kernel = runif, temporal_kernel = rgamma)
+#' rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
 #'
 #' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-#' rHawkes(params, region, spatial_kernel = rexp_spatial, temporal_kernel = rexp)
+#' rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
 #'
 #'
 #' #params <- list(background_rate = c(-4.5, 1),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
 #' #data("example_background_covariates")
 #' #example_background_covariates <- example_background_covariates[,c("geoid", "name", "area", "X1")]
-#' #rHawkes(params, region, spatial_kernel = rexp_spatial, temporal_kernel = rexp, cov_map = example_background_covariates)
-rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL, spatial_kernel = rnorm, temporal_kernel = rexp) {
+#' #rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential", cov_map = example_background_covariates)
+rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL, spatial_family = "Gaussian", temporal_family = "Exponential") {
+  # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
+  hawkes(params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family) |>
+    .unpack_hawkes()
+
   # Set burnin regions
   x_max <- region$x[2] + 2*s_burnin
   x_min <- region$x[1]
@@ -158,7 +145,7 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
   l <- 0
 
   while (TRUE) {
-    O <- .blank_hawkes(params = params, region = region)
+    O <- hawkes(params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family)
     l <- l+1
 
 
@@ -182,7 +169,7 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
       data$x <- data$x - s_burnin
       data$y <- data$y - s_burnin
 
-      data <- data[order(data$t),] |> as_hawkes(region = region, params = params)
+      data <- data[order(data$t),] |> as_hawkes(region = region, params = params, spatial_family = spatial_family, temporal_family = temporal_family)
 
       return(data)
     }
@@ -190,7 +177,7 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
     for (i in 1:nrow(G)) {
       if (N[i] > 0) {
         # Model specified self-exciting kernels. Add parameters here
-        spatial_result <- do.call(spatial_kernel, c(list(n = N[i]), params$spatial))
+        spatial_result <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial))
 
         if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
           # Case A: kernel returns a data.frame with x and y
@@ -199,11 +186,11 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
         } else if (is.numeric(spatial_result) && length(spatial_result) == N[i]) {
           # Case B: kernel returns a numeric vector (e.g., rnorm)
           x <- spatial_result + G$x[i]
-          y <- do.call(spatial_kernel, c(list(n = N[i]), params$spatial)) + G$y[i]
+          y <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial)) + G$y[i]
         } else {
           stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
         }
-        t <- do.call(temporal_kernel, c(list(n = N[i]), params$temporal)) + G$t[i]
+        t <- do.call(temporal_sampler, c(list(n = N[i]), params$temporal)) + G$t[i]
 
         parent <- G$id[i]
         family <- G$family[i]
@@ -239,7 +226,7 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
       data$y <- data$y - s_burnin
 
 
-      data <- data[order(data$t),] |> as_hawkes(region = region, params = params)
+      data <- data[order(data$t),] |> as_hawkes(region = region, params = params, spatial_family = spatial_family, temporal_family = temporal_family)
 
       return(data)
     }

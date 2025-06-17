@@ -14,7 +14,7 @@ sim_background_events(background_rate, region, cov_map = NULL)
 \item{cov_map}{An sf object containing background covariates.}
 }
 \value{
-A hawkes object with only generated background events.
+A dataframe with generated background events.
 }
 \description{
 Simulate background events

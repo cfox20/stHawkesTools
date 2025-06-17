@@ -7,24 +7,27 @@
 as_hawkes(
   data,
   region,
+  spatial_family,
+  temporal_family,
   params = NULL,
-  spatial_kernel = NULL,
-  temporal_kernel = NULL,
-  cov_map = NULL
+  cov_map = NULL,
+  X = NULL
 )
 }
 \arguments{
-\item{data}{A dataframe containing the event locations in the columns x, y, and t.}
+\item{data}{A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
+\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
+
+\item{spatial_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+
+\item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
 
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
 
-\item{spatial_kernel}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
-
-\item{temporal_kernel}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
-
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
+
+\item{X}{A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.}
 }
 \value{
 A hawkes object.
@@ -43,6 +46,7 @@ df <- data.frame(
 
 # Convert to hawkes object
 region <- list(x = c(0, 10), y = c(0, 10), t = c(0, 50))
-hawkes_df <- as_hawkes(df, region)
+hawkes_df <- as_hawkes(df, region, spatial_family = "Gaussian", temporal_family = "Exponential")
 print(hawkes_df)
+
 }

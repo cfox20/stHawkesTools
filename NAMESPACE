@@ -2,7 +2,12 @@
 
 S3method(print,hawkes)
 export(as_hawkes)
-export(new_hawkes)
+export(conditional_intensity)
+export(dexp_spatial)
+export(full_log_likelihood)
+export(general_conditional_intensity)
+export(hawkes)
+export(pexp_spatial)
 export(rHawkes)
 export(rexp_spatial)
 export(sim_background_events)

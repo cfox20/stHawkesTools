@@ -10,8 +10,8 @@ rHawkes(
   t_burnin = 50,
   s_burnin = 0,
   cov_map = NULL,
-  spatial_kernel = rnorm,
-  temporal_kernel = rexp
+  spatial_family = "Gaussian",
+  temporal_family = "Exponential"
 )
 }
 \arguments{
@@ -25,9 +25,9 @@ rHawkes(
 
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
 
-\item{spatial_kernel}{A spatial triggering kernel function to generate data from. Defaults to rnorm if not used.}
+\item{spatial_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
 
-\item{temporal_kernel}{A spatial triggering kernel function to generate data from. Defaults to rexp if not used.}
+\item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
 }
 \value{
 A hawkes object with a generated Hawkes process.
@@ -42,14 +42,14 @@ params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 
 rHawkes(params, region)
 
 params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
-rHawkes(params, region, spatial_kernel = runif, temporal_kernel = rgamma)
+rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
 
 params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-rHawkes(params, region, spatial_kernel = rexp_spatial, temporal_kernel = rexp)
+rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
 
 
 #params <- list(background_rate = c(-4.5, 1),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
 #data("example_background_covariates")
 #example_background_covariates <- example_background_covariates[,c("geoid", "name", "area", "X1")]
-#rHawkes(params, region, spatial_kernel = rexp_spatial, temporal_kernel = rexp, cov_map = example_background_covariates)
+#rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential", cov_map = example_background_covariates)
 }
