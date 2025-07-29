@@ -2,7 +2,7 @@
 % Please edit documentation in R/hawkes_object.R
 \name{print.hawkes}
 \alias{print.hawkes}
-\title{Title}
+\title{Print hawkes object}
 \usage{
 \method{print}{hawkes}(x, n = 10, ...)
 }
@@ -17,5 +17,5 @@
 The input hawkes object, invisibly.
 }
 \description{
-Title
+Print hawkes object
 }

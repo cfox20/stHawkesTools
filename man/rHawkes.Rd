@@ -7,7 +7,7 @@
 rHawkes(
   params,
   region,
-  t_burnin = 50,
+  t_burnin = 10,
   s_burnin = 0,
   cov_map = NULL,
   spatial_family = "Gaussian",
@@ -19,7 +19,7 @@ rHawkes(
 
 \item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
 
-\item{t_burnin}{Temporal burn-in for simulation. Defaults to 50 if not used.}
+\item{t_burnin}{Temporal burn-in for simulation. Defaults to 10 if not used.}
 
 \item{s_burnin}{Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.}
 
@@ -38,18 +38,17 @@ Generate a Hawkes Process
 \examples{
 region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
 
-params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
 rHawkes(params, region)
 
-params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
 rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
 
-params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
 rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
 
 
-#params <- list(background_rate = c(-4.5, 1),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-#data("example_background_covariates")
-#example_background_covariates <- example_background_covariates[,c("geoid", "name", "area", "X1")]
-#rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential", cov_map = example_background_covariates)
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+rHawkes(params, region, cov_map = example_background_covariates)
 }

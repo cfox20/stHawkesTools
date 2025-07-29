@@ -22,6 +22,8 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
   y_length <- region$y[2] - region$y[1]
   t_length <- region$t[2] - region$t[1]
 
+  background_rate <- as.numeric(background_rate)
+
   if (length(background_rate) == 1) {
     num_events <- stats::rpois(1, exp(background_rate) * x_length * y_length * t_length)
 
@@ -45,16 +47,26 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
                      family = 1:num_events)
 
   } else{
+    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
+
     X <- cov_map |>
-      sf::st_drop_geometry() |>
-      dplyr::select(dplyr::starts_with("X")) |>
+      sf::st_drop_geometry()
+    X <- X[,cov_names] |>
       as.matrix()
     X <- cbind(1, X)
 
     num_events <- stats::rpois(nrow(X), exp(X %*% background_rate) * region$t[2] * cov_map$area)
 
-    df <- sf::st_sample(cov_map, size = num_events, exact = TRUE) |>
-      suppressWarnings() |>
+    sample <- sf::st_sfc(crs = sf::st_crs(cov_map))
+    for (i in 1:nrow(cov_map)) {
+      region_sample <- sf::st_sfc(crs = sf::st_crs(cov_map))
+      while (length(region_sample) != num_events[i]) {
+        region_sample <- c(region_sample, sf::st_sample(cov_map[i,], size = 1, type = "random", exact = TRUE))
+      }
+      sample <- c(sample, region_sample)
+    }
+
+    df <- sample |>
       sf::st_coordinates() |>
       tibble::as_tibble() |>
       dplyr::rename(x = X,
@@ -77,7 +89,7 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
 #'
 #' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list.
 #' @param region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).
-#' @param t_burnin Temporal burn-in for simulation. Defaults to 50 if not used.
+#' @param t_burnin Temporal burn-in for simulation. Defaults to 10 if not used.
 #' @param s_burnin Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.
 #' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
 #' @param spatial_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
@@ -91,21 +103,20 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
 #' @examples
 #' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
 #' rHawkes(params, region)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
 #' rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
 #' rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
 #'
 #'
-#' #params <- list(background_rate = c(-4.5, 1),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-#' #data("example_background_covariates")
-#' #example_background_covariates <- example_background_covariates[,c("geoid", "name", "area", "X1")]
-#' #rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential", cov_map = example_background_covariates)
-rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL, spatial_family = "Gaussian", temporal_family = "Exponential") {
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' data("example_background_covariates")
+#' rHawkes(params, region, cov_map = example_background_covariates)
+rHawkes <- function(params, region, t_burnin = 10, s_burnin = 0, cov_map = NULL, spatial_family = "Gaussian", temporal_family = "Exponential") {
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
   hawkes(params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family) |>
     .unpack_hawkes()
@@ -127,8 +138,8 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
   temporal_params <- params$temporal
   spatial_params <- params$spatial
 
-  if (!is.numeric(background_rate)) {
-    stop("background_rate must be numeric vector stored within named params list.")
+  if (!is.list(background_rate)) {
+    stop("background_rate must be named list stored within named params list.")
   }
   if (!((triggering_rate >= 0) && (triggering_rate < 1) && (is.numeric(triggering_rate)))) {
     stop("triggering_rate must be a numeric value between 0 and 1.")
@@ -136,6 +147,11 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
 
   # Check to see if covariates are included
   covariates <- !is.null(cov_map)
+  if (covariates) {
+    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
+  }
+  # Set X to null. Will be overwritten if there are covariates
+  X <- NULL
 
 
   # Generate background events
@@ -152,6 +168,14 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
     N <- stats::rpois(nrow(G), triggering_rate)
 
     if(sum(N) == 0) {
+
+      data <- data[(data$t > t_burnin) & (data$x > x_min + s_burnin) & (data$x < x_max - s_burnin) & (data$y > y_min + s_burnin) & (data$y < y_max - s_burnin),]
+      data$t <- data$t - t_burnin
+      data$x <- data$x - s_burnin
+      data$y <- data$y - s_burnin
+
+      data <- data[order(data$t),]
+
       if (covariates) {
         # Ensure both are sf objects and in same CRS
         data_sf <- sf::st_as_sf(data, coords = c("x", "y"), crs = sf::st_crs(cov_map))
@@ -159,18 +183,18 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
         # Spatial join: assign covariates from polygon to each point
         x_values <- sf::st_join(data_sf, cov_map, join = sf::st_within) |>
           sf::st_drop_geometry() |>
-          dplyr::select(id, dplyr::starts_with("X"))
+          dplyr::select(id, cov_names)
 
         data <- dplyr::left_join(data, x_values, by = "id")
+
+        X <- as.matrix(data[ ,cov_names])
+        data <- data[ ,!(colnames(data) %in% cov_names)]
+
       }
 
-      data <- data[(data$t > t_burnin) & (data$x > x_min + s_burnin) & (data$x < x_max - s_burnin) & (data$y > y_min + s_burnin) & (data$y < y_max - s_burnin),]
-      data$t <- data$t - t_burnin
-      data$x <- data$x - s_burnin
-      data$y <- data$y - s_burnin
-
-      data <- data[order(data$t),] |> as_hawkes(region = region, params = params, spatial_family = spatial_family, temporal_family = temporal_family)
-
+      data <- as_hawkes(data, region = region, params = params,
+                        spatial_family = spatial_family, temporal_family = temporal_family,
+                        cov_map = cov_map, X = X)
       return(data)
     }
 
@@ -208,17 +232,6 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
 
     # Return data ordered by time if no events remain in new generation
     if (nrow(O) == 0) {
-      if (covariates) {
-        # Ensure both are sf objects and in same CRS
-        data_sf <- sf::st_as_sf(data, coords = c("x", "y"), crs = sf::st_crs(cov_map))
-
-        # Spatial join: assign covariates from polygon to each point
-        x_values <- sf::st_join(data_sf, cov_map, join = sf::st_within) |>
-          sf::st_drop_geometry() |>
-          dplyr::select(id, dplyr::starts_with("X"))
-
-        data <- dplyr::left_join(data, x_values, by = "id")
-      }
 
       data <- data[(data$t > t_burnin) & (data$x > x_min + s_burnin) & (data$x < x_max - s_burnin) & (data$y > y_min + s_burnin) & (data$y < y_max - s_burnin),]
       data$t <- data$t - t_burnin
@@ -226,7 +239,27 @@ rHawkes <- function(params, region, t_burnin = 50, s_burnin = 0, cov_map = NULL,
       data$y <- data$y - s_burnin
 
 
-      data <- data[order(data$t),] |> as_hawkes(region = region, params = params, spatial_family = spatial_family, temporal_family = temporal_family)
+      data <- data[order(data$t),]
+
+      if (covariates) {
+        # Ensure both are sf objects and in same CRS
+        data_sf <- sf::st_as_sf(data, coords = c("x", "y"), crs = sf::st_crs(cov_map))
+
+        # Spatial join: assign covariates from polygon to each point
+        x_values <- sf::st_join(data_sf, cov_map, join = sf::st_within) |>
+          sf::st_drop_geometry() |>
+          dplyr::select(dplyr::all_of(c("id", cov_names)))
+
+        data <- dplyr::left_join(data, x_values, by = "id")
+
+        X <- as.matrix(data[ ,cov_names])
+        data <- data[ ,!(colnames(data) %in% cov_names)]
+
+      }
+
+      data <- as_hawkes(data, region = region, params = params,
+                        spatial_family = spatial_family, temporal_family = temporal_family,
+                        cov_map = cov_map, X = X)
 
       return(data)
     }

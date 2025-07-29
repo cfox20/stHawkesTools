@@ -121,6 +121,14 @@ hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = N
     stop(paste("Spatial parameter names are missing in temporal sampler function arguments."))
   }
 
+  if (!is.null(X) & !is.null(cov_map)) {
+    missing_covariates <- setdiff(colnames(X), colnames(cov_map))
+    if (length(missing_covariates) > 0) {
+      stop("The following covariates in X are missing from cov_map: ",
+           paste(missing, collapse = ", "))
+    }
+  }
+
 # Output object -----------------------------------------------------------
 
   structure(
@@ -181,7 +189,7 @@ as_hawkes <- function(data, region, spatial_family, temporal_family, params = NU
 }
 
 
-#' Title
+#' Print hawkes object
 #'
 #' @param x a hawkes object to be printed
 #' @param n the number of events to print
@@ -200,15 +208,20 @@ print.hawkes <- function(x, n = 10, ...) {
   cat(sprintf("  $y: [%g, %g]\n", region$y[1], region$y[2]))
   cat(sprintf("  $t: [%g, %g]\n\n", region$t[1], region$t[2]))
 
-  cov_map <- attr(x, "cov_map")
-  if (!is.null(cov_map)) {
-    print(cov_map)
-  }
+  # cov_map <- attr(x, "cov_map")
+  # if (!is.null(cov_map)) {
+  #   print(cov_map)
+  # }
 
     params <- attr(x, "params")
   if (!is.null(params)) {
     cat("Triggering Parameters:\n")
-    cat(sprintf(" Background Rate (\u03B2):   %s\n", params$background_rate))
+
+    cat("Background Rate (\u03B2):   \n")
+    for (nm in names(params$background_rate)) {
+      cat(sprintf("    %s: %s\n", nm, toString(round(params$background_rate[[nm]], 3))))
+    }
+
     cat(sprintf(" Triggering Rate (\u03b8):   %s\n", params$triggering_rate))
 
   spatial_family <- attr(x, "spatial_family")
@@ -246,3 +259,6 @@ print.hawkes <- function(x, n = 10, ...) {
 
   invisible(x)
 }
+
+
+

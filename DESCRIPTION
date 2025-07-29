@@ -13,6 +13,7 @@ Imports:
     dplyr,
     furrr,
     ggplot2,
+    nleqslv,
     purrr,
     sf,
     tibble
