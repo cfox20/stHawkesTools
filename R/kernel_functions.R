@@ -45,7 +45,6 @@ dexp_spatial <- function(x, rate) {
 }
 
 
-
 #' CDF of events with exponential(rate) distance in random direction from the origin
 #'
 #' @param x numeric vector of x coordinates
@@ -66,3 +65,99 @@ pexp_spatial <- function(q, rate) {
   cdf <- 1 - exp(-rate * r)
   return(cdf)
 }
+
+
+
+#' Density function for power law (Lomax)
+#'
+#' @param x numeric vector
+#' @param shape shape parameter for the Lomax distribution
+#' @param scale scale parameter for the Lomax distribution
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+#' dpower_law(1, shape = 2, scale = 1)
+dpower_law <- function(x, shape = 2, scale = 1) {
+  if (any(x < 0)) stop("x must be nonnegative")
+  if (any(shape <= 0)) stop("shape must be > 0")
+  if (any(scale <= 0)) stop("scale must be > 0")
+
+  dens <- (shape - 1) / scale * (1 + x / scale)^(-shape)
+  return(dens)
+}
+
+#' CDF for power law (Lomax)
+#'
+#' @param q numeric vector
+#' @param shape shape parameter for the Lomax distribution
+#' @param scale scale parameter for the Lomax distribution
+#' @param lower.tail logical; if TRUE (default), probabilities are $P[X\leq x]$ otherwise, $P[X>x].
+#'
+#' @returns a numeric vector of cumulative probabilities at each value of q
+#' @export
+#'
+#' @examples
+#' ppower_law(1, shape = 2, scale = 1)
+ppower_law <- function(q, shape = 2, scale = 1, lower.tail = TRUE) {
+  if (any(q < 0)) stop("q must be nonnegative")
+  if (any(shape <= 0)) stop("shape must be > 0")
+  if (any(scale <= 0)) stop("scale must be > 0")
+
+  cdf <- 1 - (1 + q / scale)^(-(shape - 1))
+  if (!lower.tail) cdf <- 1 - cdf
+  return(cdf)
+}
+
+#' Sample events with power law distance in time
+#'
+#' @param n number of observations
+#' @param shape shape parameter for the Lomax distribution
+#' @param scale scale parameter for the Lomax distribution
+#'
+#' @returns a numeric vector of values of the Lomax distribution
+#' @export
+#'
+#' @examples
+#' rexp_spatial(5, shape = 2, scale = 1)
+rpower_law <- function(n, shape = 2, scale = 1) {
+  if (is.null(shape) | is.null(scale)) {
+    stop("params must include 'shape' and 'scale' for the power law kernel")
+  }
+
+  u <- runif(n)
+
+  scale * ((1-u)^(-1/(shape-1))-1)
+}
+#
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

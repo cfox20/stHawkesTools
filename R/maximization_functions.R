@@ -97,11 +97,7 @@
 }
 
 
-################################
-################################
-# Make sure to come back and complete this
-################################
-################################
+
 background_covariates_function <- function(background_rate, hawkes, parent_est_mat, X, cov_map, region) {
   cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
 

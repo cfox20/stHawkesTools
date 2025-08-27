@@ -98,10 +98,10 @@ sample_blocks <- function(hawkes, num_blocks) {
 #'
 #' future::plan(future::multisession, workers = future::availableCores())
 #'
-#' block_bootstrap(hawkes, est, B = 5, num_blocks = 20, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
+#' block_bootstrap(hawkes, est, B = 1000, num_blocks = 25, alpha = .05, parallel = TRUE, boundary = c(.5,3))
 #'
 #' future::plan(future::sequential)
-block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE, seed = NULL, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -110,10 +110,6 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE,
 
   if (!exists("cov_map", inherits = FALSE)) {
     cov_map <- NULL
-  }
-
-  if (!is.null(seed)) {
-    set.seed(seed)
   }
 
   # Wrap data to sample blocks beyond end
@@ -128,7 +124,7 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE,
       sample <- sample_blocks(extended_hawkes, num_blocks)
 
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(sample, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(sample, inits = est$est, boundary = boundary, max_iters = max_iters)
 
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .x)
@@ -142,7 +138,7 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE,
         dplyr::mutate(value = NA,
                       B = .x)
 
-    }), .options = furrr::furrr_options(seed = !is.null(seed)), .progress = TRUE, packages = "stHawkesTools")
+    }), .options = furrr::furrr_options(seed = TRUE), .progress = TRUE, packages = "stHawkesTools")
 
   } else{
     boot_samples <- purrr::map(1:B, ~ {
@@ -151,14 +147,14 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE,
     n_failed <<- 0
     boot_ests <- purrr::imap_dfr(boot_samples, ~ tryCatch({
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(.x, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(.x, inits = est$est, boundary = boundary, max_iters = max_iters)
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .y)
     }, error = function(e){
       warning(paste("Parameter estimation failed on bootstrap iteration:", .y,
                     "Due to error:", e))
       # If estimation failed return NA for the estimates and warn the user
-      n_failed <- n_failed + 1
+      n_failed <<- n_failed + 1
       .hawkes_mle_to_dataframe(est) |>
         dplyr::mutate(value = NA,
                       B = .y)
@@ -178,7 +174,7 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha, parallel = FALSE,
   boot_ests |>
     tidyr::drop_na() |>
     dplyr::group_by(parameter_type, parameter) |>
-    dplyr::summarise(est = mean(value),
+    dplyr::summarise(boot_est_median = median(value),
                      lower = quantile(value, alpha/2),
                      upper = quantile(value, 1-(alpha/2)),
                      width = upper - lower,

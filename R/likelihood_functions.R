@@ -15,6 +15,10 @@
 conditional_intensity <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
+  if (class(parameters)[1] == "hawkes_fit") {
+    parameters <- parameters$est
+  }
+
   .sanity_check(hawkes)
 
   .unpack_hawkes(hawkes)
@@ -85,6 +89,10 @@ conditional_intensity <- function(hawkes, parameters) {
 #' spatial_conditional_intensity(hawkes, params, 25)
 spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+
+  if (class(parameters)[1] == "hawkes_fit") {
+    parameters <- parameters$est
+  }
 
   .sanity_check(hawkes)
 
@@ -173,6 +181,10 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
 #' temporal_conditional_intensity(hawkes, params, c(5,5))
 temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+
+  if (class(parameters)[1] == "hawkes_fit") {
+    parameters <- parameters$est
+  }
 
   .sanity_check(hawkes)
 
@@ -263,6 +275,10 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 full_log_likelihood <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
+  if (class(parameters)[1] == "hawkes_fit") {
+    parameters <- parameters$est
+  }
+
   .sanity_check(hawkes)
 
   .unpack_hawkes(hawkes)
@@ -332,14 +348,7 @@ full_log_likelihood <- function(hawkes, parameters) {
   return(log_part - background_integral - triggering_integral)
 }
 
-hessian_log_likelihood_wrapper <- function(parameter_vector, hawkes) {
- unlist(params)
-}
 
-.vector_input_full_log_likelihood <- function(par_vec, hawkes, param_template) {
-  parameters <- .vector_to_params(par_vec, param_template)
-  full_log_likelihood(hawkes, parameters)
-}
 
 
 

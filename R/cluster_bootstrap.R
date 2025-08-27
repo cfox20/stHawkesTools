@@ -13,9 +13,9 @@
 #' hawkes <- rHawkes(params, region)
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 #' parent_mat <- parent_est(hawkes, est)
-#' sample_clusters(hawkes, parent_mat)
+#' sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
 #'
-sample_clusters <- function(hawkes, parent_mat) {
+sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -28,6 +28,10 @@ sample_clusters <- function(hawkes, parent_mat) {
 
   if (!exists("X", inherits = FALSE)) {
     X <- NULL
+  }
+
+  if (is.null(boundary)) {
+    boundary <- c(0,0)
   }
 
   # Find which event is the parent of every event
@@ -93,9 +97,9 @@ sample_clusters <- function(hawkes, parent_mat) {
 
     sampled_clusters <- data.frame(
       cluster = cluster,
-      x_shift = runif(n, region$x[1], region$x[2]),
-      y_shift = runif(n, region$y[1], region$y[2]),
-      t_shift = runif(n, region$t[1], region$t[2])
+      x_shift = runif(n, region$x[1] - boundary[1], region$x[2] - boundary[1]),
+      y_shift = runif(n, region$y[1] - boundary[1], region$y[2] - boundary[1]),
+      t_shift = runif(n, region$t[1], region$t[2] - boundary[2])
     )
   }
 
@@ -111,9 +115,7 @@ sample_clusters <- function(hawkes, parent_mat) {
   new_hawkes <- new_hawkes[(new_hawkes$t > region$t[1]) & (new_hawkes$x > region$x[1]) & (new_hawkes$x < region$x[2]) & (new_hawkes$y > region$y[1]) & (new_hawkes$y < region$y[2]),]
 
   if (!is.null(cov_map)) {
-    X <- sf::st_as_sf(new_hawkes, coords = c("x", "y"), crs = NA) |>
-      sf::st_join(cov_map) |>
-      sf::st_drop_geometry() |>
+    X <- new_hawkes |>
       dplyr::select(colnames(X)) |>
       as.matrix()
   }
@@ -122,7 +124,6 @@ sample_clusters <- function(hawkes, parent_mat) {
             spatial_family, temporal_family = temporal_family,
             cov_map = cov_map, X = X)
 }
-
 
 
 #' Block Bootstrap for Confidence Intervals of Hawkes MLEs
@@ -134,12 +135,14 @@ sample_clusters <- function(hawkes, parent_mat) {
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,150))
+#' region <- list(x = c(0,10), y = c(0,10), t = c(0,100))
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
+#' params <- list(background_rate = list(intercept = -5.5),triggering_rate = 0.85,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
 #' hawkes <- rHawkes(params, region)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-#' cluster_bootstrap(hawkes, est, 50, alpha = 0.05)
+#' (est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
+#'
+#' cluster_bootstrap(hawkes, est, B = 5, alpha = .05, parallel = FALSE, boundary = c(.5,3))
+#'
 #'
 #' data("example_background_covariates")
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
@@ -148,10 +151,10 @@ sample_clusters <- function(hawkes, parent_mat) {
 #'
 #' future::plan(future::multisession, workers = future::availableCores())
 #'
-#' cluster_bootstrap(hawkes, est, B = 50, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
+#' cluster_bootstrap(hawkes, est, B = 500, alpha = .05, parallel = TRUE, boundary = c(.5,3)))
 #'
 #' future::plan(future::sequential)
-cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, seed = NULL, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -162,10 +165,6 @@ cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, seed = NU
     cov_map <- NULL
   }
 
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-
   # Estimate parent matrix using the original estimate
   parent_mat <- parent_est(hawkes, est)
 
@@ -173,10 +172,11 @@ cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, seed = NU
     n_failed <- 0
 
     boot_ests <- furrr::future_map_dfr(1:B, ~ tryCatch({
-      sample <- sample_clusters(hawkes, parent_mat)
+      # Sample estimated clusters to make a bootstrap sample
+      sample <- sample_clusters(hawkes, parent_mat, boundary)
 
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(sample, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(sample, inits = est$est, boundary = boundary, max_iters = max_iters)
 
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .x)
@@ -190,18 +190,19 @@ cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, seed = NU
         dplyr::mutate(value = NA,
                       B = .x)
 
-    }), .options = furrr::furrr_options(seed = !is.null(seed)), .progress = TRUE, packages = "stHawkesTools")
+    }), .options = furrr::furrr_options(seed = TRUE), .progress = TRUE, packages = "stHawkesTools")
 
   } else{
     n_failed <- 0
 
     boot_samples <- purrr::map(1:B, ~ {
-      sample <- sample_clusters(hawkes, parent_mat)
+      sample <- sample_clusters(hawkes, parent_mat, boundary)
+      # sample <- sample_clusters2(hawkes, parent_mat, boundary)
     })
 
     boot_ests <- purrr::imap_dfr(boot_samples, ~ tryCatch({
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(.x, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(.x, inits = est$est, boundary = boundary, max_iters = max_iters)
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .y)
     }, error = function(e){
@@ -228,7 +229,7 @@ cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, seed = NU
   boot_ests |>
     tidyr::drop_na() |>
     dplyr::group_by(parameter_type, parameter) |>
-    dplyr::summarise(est = mean(value),
+    dplyr::summarise(boot_est_median = median(value),
                      lower = quantile(value, alpha/2),
                      upper = quantile(value, 1-(alpha/2)),
                      width = upper - lower,

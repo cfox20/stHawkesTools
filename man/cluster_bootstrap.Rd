@@ -10,7 +10,6 @@ cluster_bootstrap(
   B,
   alpha,
   parallel = FALSE,
-  seed = NULL,
   max_iters = 500,
   boundary = NULL,
   t_burnin = 10,
@@ -29,12 +28,14 @@ A \code{hawkes} object.
 Block Bootstrap for Confidence Intervals of Hawkes MLEs
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,150))
+region <- list(x = c(0,10), y = c(0,10), t = c(0,100))
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
+params <- list(background_rate = list(intercept = -5.5),triggering_rate = 0.85,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
 hawkes <- rHawkes(params, region)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-cluster_bootstrap(hawkes, est, 50, alpha = 0.05)
+(est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
+
+cluster_bootstrap(hawkes, est, B = 5, alpha = .05, parallel = FALSE, boundary = c(.5,3))
+
 
 data("example_background_covariates")
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
@@ -43,7 +44,7 @@ est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 
 future::plan(future::multisession, workers = future::availableCores())
 
-cluster_bootstrap(hawkes, est, B = 50, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
+cluster_bootstrap(hawkes, est, B = 500, alpha = .05, parallel = TRUE, boundary = c(.5,3)))
 
 future::plan(future::sequential)
 }

@@ -11,7 +11,6 @@ subsample(
   length,
   alpha,
   parallel = FALSE,
-  seed = NULL,
   max_iters = 500,
   boundary = NULL,
   t_burnin = 10,

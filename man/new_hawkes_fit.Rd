@@ -4,12 +4,12 @@
 \alias{new_hawkes_fit}
 \title{Construct a hawkes_fit object from estimated parameters}
 \usage{
-new_hawkes_fit(est)
+new_hawkes_fit(hawkes, est)
 }
 \arguments{
-\item{est}{A named nested list of estimated parameters, e.g. from \code{hawkes_mle()}}
-
 \item{hawkes}{The original hawkes object used to fit the model}
+
+\item{est}{A named nested list of estimated parameters, e.g. from \code{hawkes_mle()}}
 
 \item{residual_fn}{Function to compute residuals (default = \code{compute_residuals})}
 }

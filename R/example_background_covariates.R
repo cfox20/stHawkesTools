@@ -1,6 +1,7 @@
 #' Example Background Covariate sf Object
 #'
-#' A simple `sf` object with a rectangular spatial region and one covariate column,
+#' A simple `sf` object with a rectangular spatial region surrounding Waco, TX.
+#' Three scaled covariate columns are included from U.S. Census Bureau data,
 #' useful for simulating background intensity in Hawkes processes.
 #'
 #' @importFrom graphics plot

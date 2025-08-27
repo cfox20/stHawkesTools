@@ -17,6 +17,10 @@
 parent_est <- function(hawkes, parameters = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
+  if (class(parameters)[1] == "hawkes_fit") {
+    parameters <- parameters$est
+  }
+
   .sanity_check(hawkes)
 
   .unpack_hawkes(hawkes)
@@ -157,6 +161,16 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
     parent_est_mat[outside_S,] <- 0
 
     hawkes <- hawkes[!outside_S,]
+
+    if (exists("cov_map")) {
+      subregion <- sf::st_bbox(c(xmin = x_min + boundary[1], xmax = x_max - boundary[1],
+                                 ymin = y_min + boundary[1], ymax = y_max - boundary[1]),
+                      crs = sf::st_crs(cov_map)) |>
+                   sf::st_as_sfc() |>
+                   sf::st_as_sf()
+      cov_map <- sf::st_intersection(cov_map, subregion) |>
+        suppressWarnings()
+    }
   }
 
   if (length(background_rate) > 1) {
@@ -169,9 +183,25 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 
   diag(parent_est_mat) <- 0
 
+  triggering_rate_update <- sum(parent_est_mat) / sum(do.call(temporal_cdf, c(list(q = t_max - hawkes$t), temporal_params)))
+
   # Hardcode analytic solutions if available for the MLE
+
+  # switch(spatial_family,
+  #   "Gaussian" = .spatial_update_gaussian(),
+  #   "Uniform" = "no",
+  #   stop("Spatial parameter update not found")
+  # )
+  #
+  # switch(temporal_family,
+  #   "Exponential" = .temporal_update_gaussian(hawkes),
+  #   "Uniform" = "no",
+  #   stop("Spatial parameter update not found")
+  # )
+
+
   if (spatial_family == "Gaussian" && temporal_family == "Exponential") {
-    triggering_rate_update <- sum(parent_est_mat) / (sum(1 - exp(-temporal_params$rate * (t_max - hawkes$t))))
+    # triggering_rate_update <- sum(parent_est_mat) / (sum(1 - exp(-temporal_params$rate * (t_max - hawkes$t))))
 
     temporal_param_updates <- list(rate = sum(parent_est_mat) / (sum(parent_est_mat * time_diff) + triggering_rate_update * sum((t_max - hawkes$t)*exp(-temporal_params$rate * (t_max - hawkes$t)))))
 
@@ -179,8 +209,6 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 
   } else {
   # Numerically solve for MLE for general kernels
-    triggering_rate_update <- sum(parent_est_mat) / sum(do.call(temporal_cdf, c(list(q = t_max - hawkes$t), temporal_params)))
-
     temporal_param_updates <- .optim_named(.temporal_parameter_likelihood, parameters, "temporal",
                                            fixed = fixed_temporal, hawkes = hawkes, time_diff = time_diff, parent_est_mat = parent_est_mat)
 
@@ -205,7 +233,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' @param boundary A boundary region to correct for the bpundary bias. Defaults to NULL if not used.
 #' @param max_iters A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.
 #'
-#' @returns A `hawkes_fit` object that is a list of lists contatiing the MLEs.
+#' @returns A `hawkes_fit` object that is a list of lists containing the MLEs.
 #' @export
 #'
 #' @examples
@@ -220,8 +248,9 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' data("example_background_covariates")
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500) {
+#' (est <- hawkes_mle(hawkes, inits = params))
+#' (est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
+hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -253,19 +282,23 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500) {
     est2 <- est_params(hawkes, est1, parent_est_mat, boundary = boundary,
                        fixed_spatial = fixed_spatial, fixed_temporal = fixed_temporal)
 
+    if (verbose) {
+      print(est2)
+    }
+
     full_like_2 <- full_log_likelihood(hawkes, est2)
 
     # Check if the full likelihood has converged
     if (abs(full_like_2 - full_like_1) < 10e-10) {
       est2$fixed <- inits$fixed
-      return(new_hawkes_fit(est2))
+      return(new_hawkes_fit(hawkes, est2))
     }
     est1 <- est2
     full_like_1 <- full_like_2
   }
 
   est2$fixed <- inits$fixed
-  new_hawkes_fit(est2)
+  new_hawkes_fit(hawkes, est2)
 }
 
 
@@ -349,6 +382,10 @@ hessian_est <- function(hawkes, est) {
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 #' wald_int(hawkes, est)
 wald_int <- function(hawkes, est, conf_level = 0.95) {
+  if (class(est)[1] == "hawkes_fit") {
+    est <- est$est
+  }
+
   alpha <- 1 - conf_level
 
   # if (method == "rathbun") {

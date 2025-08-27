@@ -16,13 +16,13 @@
 #' @param hawkes A hawkes object
 #'
 #' @returns TRUE
-#'
+#' @keywords internal
 .sanity_check <- function(hawkes) {
   if (class(hawkes)[[1]] != "hawkes") {
     stop("Object must be a hawkes object.")
   }
 
-  required_attrs <- c("spatial_pdf", "temporal_pdf", "spatial_cdf", "temporal_cdf", "spatial_sampler", "temporal_sampler", "region")
+  required_attrs <- c("spatial_pdf", "temporal_pdf", "spatial_cdf", "temporal_cdf", "region")
 
   missing_attrs <- required_attrs[!required_attrs %in% names(attributes(hawkes))]
 
@@ -133,6 +133,9 @@
 #'
 #' @keywords internal
 .hawkes_mle_to_dataframe <- function(est) {
+  if (class(est)[1] == "hawkes_fit") {
+    est <- est$est
+  }
   est <- est[names(est) != "fixed"]
 
   purrr::imap_dfr(est, function(value, type) {
@@ -151,7 +154,20 @@
 }
 
 
-
+#' Wrapper for likelihood for numerical optimization
+#'
+#' @param par_vec a numeric vector of the parameter initial values
+#' @param hawkes a hawkes object
+#' @param param_template a template to reconstruct the parameter object
+#'
+#' @returns
+#' @export
+#'
+#' @keywords internal
+.vector_input_full_log_likelihood <- function(par_vec, hawkes, param_template) {
+  parameters <- .vector_to_params(par_vec, param_template)
+  full_log_likelihood(hawkes, parameters)
+}
 
 
 

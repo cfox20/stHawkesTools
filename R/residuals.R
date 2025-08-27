@@ -7,7 +7,7 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' region <- list(x = c(0,10), y = c(0,10), t = c(0,100))
 #'
 #' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
 #' hawkes <- rHawkes(params, region)
@@ -23,6 +23,15 @@
 #' residuals <- time_scaled_residuals(hawkes, est)
 #'
 #' plot(density(rexp(length(residuals)), from = 0), lwd = 2)
+#' lines(density(residuals, from = 0), col = "red")
+#'
+#' data("example_background_covariates")
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
+#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+#' residuals <- time_scaled_residuals(hawkes, est)
+#'
+#' curve(dexp(x, rate = 1), from = 0, to = 10, lwd = 2, xlab = "Residual", ylab = "Density", main = "Residual vs Exponential(1)")
 #' lines(density(residuals, from = 0), col = "red")
 time_scaled_residuals <- function(hawkes, est) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -69,7 +78,25 @@ time_scaled_residuals <- function(hawkes, est) {
   w <- hawkes$t - dplyr::lag(hawkes$t, default = t_min)
 
   # Store integral of background rate
-  background_term <- (x_max - x_min) * (y_max - y_min) * as.numeric(exp(X %*% background_rate) * w)
+  if (exists("cov_map")) {
+    cov_cols <- colnames(X)[-1]
+
+    cov_df <- cov_map |>
+      sf::st_drop_geometry() |>
+      dplyr::select(dplyr::all_of(c(cov_cols, "area")))
+
+    X_mat <- cbind(1, as.matrix(cov_df[cov_cols]))
+    eta   <- drop(X_mat %*% background_rate)
+
+    bg_space_integral <- sum(exp(eta) * cov_df$area)
+
+    background_term <- w * bg_space_integral
+  } else{
+    background_term <- (x_max - x_min) * (y_max - y_min) * as.numeric(exp(X %*% background_rate) * w)
+  }
+
+
+  (x_max - x_min) * (y_max - y_min) * as.numeric(exp(X %*% background_rate) * w)
 
   # Integrate over entire spatial region and over waiting time
   triggering_term <-

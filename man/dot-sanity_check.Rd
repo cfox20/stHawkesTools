@@ -15,3 +15,4 @@ TRUE
 \description{
 (Internal) Check to make sure necessary attributes are in the Hawkes object
 }
+\keyword{internal}

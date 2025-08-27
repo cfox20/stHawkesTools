@@ -6,16 +6,16 @@
 #'
 #' @return An object of class `hawkes_fit`
 #' @export
-new_hawkes_fit <- function(est) {
+new_hawkes_fit <- function(hawkes, est) {
   stopifnot(is.list(est))
 
   structure(
-    # list(
-    #   estimate = est,
-    #   hawkes = hawkes,
-    #   residuals = residual_fn(hawkes, est)
-    # ),
-    est,
+    list(
+      estimate = est,
+      hawkes_object = hawkes,
+      residuals = time_scaled_residuals(hawkes, est)
+    ),
+    # est,
     class = c("hawkes_fit", class(est))
   )
 }
@@ -29,24 +29,24 @@ new_hawkes_fit <- function(est) {
 #' @export
 #'
 print.hawkes_fit <- function(x) {
-
+  est <- x$est
   cat("Triggering Parameter Estimates:\n")
 
   cat("Background Rate (\u03B2):   \n")
-  for (nm in names(x$background_rate)) {
-    cat(sprintf("    %s: %s\n", nm, toString(round(x$background_rate[[nm]], 3))))
+  for (nm in names(est$background_rate)) {
+    cat(sprintf("    %s: %s\n", nm, toString(round(est$background_rate[[nm]], 3))))
   }
-  cat(sprintf(" Triggering Rate (\u03b8):   %s\n", round(x$triggering_rate, 3)))
+  cat(sprintf(" Triggering Rate (\u03b8):   %s\n", round(est$triggering_rate, 3)))
 
   cat("\nSpatial Triggering Parameter Estimates:\n")
-  for (nm in names(x$spatial)) {
-    cat(sprintf("    %s: %s\n", nm, toString(round(x$spatial[[nm]], 3))))
+  for (nm in names(est$spatial)) {
+    cat(sprintf("    %s: %s\n", nm, toString(round(est$spatial[[nm]], 3))))
   }
 
   cat("Temporal Triggering Parameter Estimates:\n")
-  for (nm in names(x$temporal)) {
-    cat(sprintf("    %s: %s\n", nm, toString(round(x$temporal[[nm]], 3))))
+  for (nm in names(est$temporal)) {
+    cat(sprintf("    %s: %s\n", nm, toString(round(est$temporal[[nm]], 3))))
   }
 
-  invisible(x)
+  invisible(est)
 }

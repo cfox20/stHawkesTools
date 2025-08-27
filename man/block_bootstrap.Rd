@@ -11,7 +11,6 @@ block_bootstrap(
   num_blocks,
   alpha,
   parallel = FALSE,
-  seed = NULL,
   max_iters = 500,
   boundary = NULL,
   t_burnin = 10,
@@ -44,7 +43,7 @@ est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 
 future::plan(future::multisession, workers = future::availableCores())
 
-block_bootstrap(hawkes, est, B = 5, num_blocks = 20, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
+block_bootstrap(hawkes, est, B = 1000, num_blocks = 25, alpha = .05, parallel = TRUE, boundary = c(.5,3))
 
 future::plan(future::sequential)
 }

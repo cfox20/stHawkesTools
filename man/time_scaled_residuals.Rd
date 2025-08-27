@@ -18,7 +18,7 @@ A numeric vector of transformed waiting times.
 Compute Time Scaled Residuals
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+region <- list(x = c(0,10), y = c(0,10), t = c(0,100))
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
 hawkes <- rHawkes(params, region)
@@ -34,5 +34,14 @@ est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
 residuals <- time_scaled_residuals(hawkes, est)
 
 plot(density(rexp(length(residuals)), from = 0), lwd = 2)
+lines(density(residuals, from = 0), col = "red")
+
+data("example_background_covariates")
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
+est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+residuals <- time_scaled_residuals(hawkes, est)
+
+curve(dexp(x, rate = 1), from = 0, to = 10, lwd = 2, xlab = "Residual", ylab = "Density", main = "Residual vs Exponential(1)")
 lines(density(residuals, from = 0), col = "red")
 }

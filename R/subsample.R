@@ -65,7 +65,7 @@ sample_subregion <- function(hawkes, length) {
 #' subsample(hawkes, est, B = 5, length = 20, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
 #'
 #' future::plan(future::sequential)
-subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, seed = NULL, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -76,10 +76,6 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, seed = NU
     cov_map <- NULL
   }
 
-  if (!is.null(seed)) {
-    set.seed(seed)
-  }
-
   if (parallel) {
     n_failed <- 0
 
@@ -87,7 +83,7 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, seed = NU
       sample <- sample_subregion(hawkes, length)
 
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(sample, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(sample, inits = est$est, boundary = boundary, max_iters = max_iters)
 
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .x)
@@ -110,7 +106,7 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, seed = NU
     n_failed <<- 0
     boot_ests <- purrr::imap_dfr(boot_samples, ~ tryCatch({
       # Estimate the parameters on each bootstrapped sample and transform to long tibble
-      boot_est <- hawkes_mle(.x, est, boundary = boundary, max_iters = max_iters)
+      boot_est <- hawkes_mle(.x, inits = est$est, boundary = boundary, max_iters = max_iters)
       .hawkes_mle_to_dataframe(boot_est) |>
         dplyr::mutate(B = .y)
     }, error = function(e){
@@ -137,7 +133,7 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, seed = NU
   boot_ests |>
     tidyr::drop_na() |>
     dplyr::group_by(parameter_type, parameter) |>
-    dplyr::summarise(est = mean(value),
+    dplyr::summarise(subsamp_est_median = median(value),
                      lower = quantile(value, alpha/2),
                      upper = quantile(value, 1-(alpha/2)),
                      width = upper - lower,

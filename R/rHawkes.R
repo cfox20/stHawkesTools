@@ -183,12 +183,12 @@ rHawkes <- function(params, region, t_burnin = 10, s_burnin = 0, cov_map = NULL,
         # Spatial join: assign covariates from polygon to each point
         x_values <- sf::st_join(data_sf, cov_map, join = sf::st_within) |>
           sf::st_drop_geometry() |>
-          dplyr::select(id, cov_names)
+          dplyr::select(id, cov_names, geoid, area)
 
         data <- dplyr::left_join(data, x_values, by = "id")
 
         X <- as.matrix(data[ ,cov_names])
-        data <- data[ ,!(colnames(data) %in% cov_names)]
+        # data <- data[ ,!(colnames(data) %in% cov_names)]
 
       }
 
@@ -248,12 +248,12 @@ rHawkes <- function(params, region, t_burnin = 10, s_burnin = 0, cov_map = NULL,
         # Spatial join: assign covariates from polygon to each point
         x_values <- sf::st_join(data_sf, cov_map, join = sf::st_within) |>
           sf::st_drop_geometry() |>
-          dplyr::select(dplyr::all_of(c("id", cov_names)))
+          dplyr::select(id, cov_names, geoid, area)
 
         data <- dplyr::left_join(data, x_values, by = "id")
 
         X <- as.matrix(data[ ,cov_names])
-        data <- data[ ,!(colnames(data) %in% cov_names)]
+        # data <- data[ ,!(colnames(data) %in% cov_names)]
 
       }
 

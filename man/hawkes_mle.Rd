@@ -4,7 +4,7 @@
 \alias{hawkes_mle}
 \title{Function to Estimate MLEs}
 \usage{
-hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500)
+hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
@@ -16,7 +16,7 @@ hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500)
 \item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
 }
 \value{
-A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
+A \code{hawkes_fit} object that is a list of lists containing the MLEs.
 }
 \description{
 Function to Estimate MLEs
@@ -33,5 +33,6 @@ hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
 data("example_background_covariates")
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+(est <- hawkes_mle(hawkes, inits = params))
+(est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
 }

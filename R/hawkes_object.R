@@ -83,19 +83,22 @@ hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = N
                             "Gamma" = stats::dgamma,
                             "Uniform" = stats::dunif,
                             "Exponential" = stats::dexp,
-                            stop("Temporal family is not supported.\nUse one of the provided spatial kernels (Exponential, Gamma, Uniform) or provide a density function to the temporal_family argument.")
+                            "Power Law" = dpower_law,
+                            stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the temporal_family argument.")
     )
     temporal_cdf <- switch (temporal_family,
                             "Gamma" = stats::pgamma,
                             "Unifrom" = stats::punif,
                             "Exponential" = stats::pexp,
-                            stop("Spatial family is not supported.\nUse one of the provided spatial kernels (Guassian, Uniform, Exponential) or provide a density function to the spatial_family argument.")
+                            "Power Law" = ppower_law,
+                            stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the spatial_family argument.")
     )
     temporal_sampler <- switch (temporal_family,
                                 "Gamma" = stats::rgamma,
                                 "Uniform" = stats::runif,
                                 "Exponential" = stats::rexp,
-                                stop("Temporal family is not supported.\nUse one of the provided spatial kernels (Exponential, Gamma, Uniform) or provide a density function to the temporal_family argument.")
+                                "Power Law" = rpower_law,
+                                stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the temporal_family argument.")
     )
   } else {
     # Add in support to provide all the custom functions in 1 list

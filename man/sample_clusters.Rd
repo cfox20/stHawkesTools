@@ -4,7 +4,7 @@
 \alias{sample_clusters}
 \title{Resample Data by EM-ALgorithm Clustering}
 \usage{
-sample_clusters(hawkes, parent_mat)
+sample_clusters(hawkes, parent_mat, boundary = NULL)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
@@ -24,6 +24,6 @@ params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spat
 hawkes <- rHawkes(params, region)
 est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 parent_mat <- parent_est(hawkes, est)
-sample_clusters(hawkes, parent_mat)
+sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
 
 }

@@ -10,7 +10,6 @@ parametric_bootstrap(
   B,
   alpha = 0.05,
   parallel = FALSE,
-  seed = NULL,
   max_iters = 500,
   boundary = NULL,
   t_burnin = 10,
@@ -28,8 +27,6 @@ parametric_bootstrap(
 
 \item{parallel}{Logical to specify use of parallel computation via the \pkg{furrr} package. Setup multisession before calling function. See package for details.}
 
-\item{seed}{A numeric to set seed for simulation. Defaults to NULL if not used. Note that a seed is recommended when using \code{parallel = TRUE}.}
-
 \item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
 
 \item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
@@ -37,6 +34,8 @@ parametric_bootstrap(
 \item{t_burnin}{A numeric value to set the temporal burn-in region for simulation}
 
 \item{s_burnin}{A numeric value to set the spatial burn-in region for simulation}
+
+\item{seed}{A numeric to set seed for simulation. Defaults to NULL if not used. Note that a seed is recommended when using \code{parallel = TRUE}.}
 }
 \value{
 A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
@@ -60,7 +59,7 @@ est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 
 future::plan(future::multisession, workers = future::availableCores())
 
-parametric_bootstrap(hawkes, est, B = 5, parallel = TRUE, seed = 123, boundary = c(.5,3))
+parametric_bootstrap(hawkes, est, B = 500, parallel = TRUE, boundary = c(.5,3))
 
 future::plan(future::sequential)
 }
