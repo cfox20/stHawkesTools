@@ -1,5 +1,24 @@
 
-
+#' Create Rectangular SF Object
+#'
+#' @param xmin horizontal minimum of spatial region
+#' @param xmax horizontal maximum of spatial region
+#' @param ymin vertical minimum of spatial region
+#' @param ymax vertical maximum of spatial region
+#' @param crs coordinate reference system. Defaults to NA if unused.
+#'
+#' @returns an sf object with a rectangular region
+#' @export
+#'
+#' @examples
+#' create_rectangular_sf(0,10,0,10)
+create_rectangular_sf <- function(xmin, xmax, ymin, ymax, crs = NA) {
+  sf::st_as_sfc(sf::st_bbox(c(xmin = xmin,
+                              ymin = ymin,
+                              xmax = xmax,
+                              ymax = ymax)), crs = crs) |>
+    sf::st_as_sf()
+}
 
 #' Simulate background events
 #'
@@ -13,19 +32,22 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' time_window <- c(0,50)
 #' background_rate <- -4
 #'
-#' sim_background_events(background_rate, region)
-sim_background_events <- function(background_rate, region, cov_map = NULL) {
-  x_length <- region$x[2] - region$x[1]
-  y_length <- region$y[2] - region$y[1]
-  t_length <- region$t[2] - region$t[1]
+#' sim_background_events(background_rate, time_window, spatial_region)
+sim_background_events <- function(background_rate, time_window, spatial_region, cov_map = NULL) {
+  spatial_area <- spatial_region |> sf::st_area()
+  t_length <- time_window[2] - time_window[1]
 
   background_rate <- as.numeric(background_rate)
 
   if (length(background_rate) == 1) {
-    num_events <- stats::rpois(1, exp(background_rate) * x_length * y_length * t_length)
+    num_events <- stats::rpois(1, exp(background_rate) * spatial_area * t_length)
+
+    sample <- sf::st_sample(spatial_region, num_events, exact = TRUE) |>
+      sf::st_coordinates()
 
     if (num_events == 0) {
       df <- tibble::tibble(
@@ -38,9 +60,9 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
                        family = NULL)
     }
     df <- tibble::tibble(
-                     x = runif(num_events, region$x[1], region$x[2]),
-                     y = runif(num_events, region$y[1], region$y[2]),
-                     t = runif(num_events, region$t[1], region$t[2]),
+                     x = sample[,"X"],
+                     y = sample[,"Y"],
+                     t = runif(num_events, time_window[1], time_window[2]),
                      id = 1:num_events,
                      parent = 0,
                      gen = 0,
@@ -116,22 +138,16 @@ sim_background_events <- function(background_rate, region, cov_map = NULL) {
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
 #' rHawkes(params, region, cov_map = example_background_covariates)
-rHawkes <- function(params, region, t_burnin = 10, s_burnin = 0, cov_map = NULL, spatial_family = "Gaussian", temporal_family = "Exponential") {
+rHawkes <- function(params, time_window, spatial_region, temporal_burnin = 10, spatial_burnin = 2, cov_map = NULL, spatial_family = "Gaussian", temporal_family = "Exponential") {
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
-  hawkes(params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family) |>
+  hawkes(params = params, time_window = time_window, spatial_region = spatial_region, spatial_family = spatial_family, temporal_family = temporal_family) |>
     .unpack_hawkes()
 
   # Set burnin regions
-  x_max <- region$x[2] + 2*s_burnin
-  x_min <- region$x[1]
-  y_max <- region$y[2] + 2*s_burnin
-  y_min <- region$y[1]
-  time_min <- region$t[1]
-  time_max <- region$t[2] + t_burnin
+  spatial_region_burnin <- sf::st_buffer(spatial_region, spatial_burnin)
 
-  new_region <- list(x = c(x_min, x_max),
-                     y = c(y_min, y_max),
-                     t = c(time_min, time_max))
+  temporal_window_burnin <- temporal_window
+  temporal_window_burnin[2] <- temporal_window[2] + temporal_burnin
 
   background_rate <- params$background_rate
   triggering_rate <- params$triggering_rate
@@ -148,20 +164,23 @@ rHawkes <- function(params, region, t_burnin = 10, s_burnin = 0, cov_map = NULL,
   # Check to see if covariates are included
   covariates <- !is.null(cov_map)
   if (covariates) {
-    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
+    cov_names <- colnames(X)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
   }
   # Set X to null. Will be overwritten if there are covariates
   X <- NULL
 
 
   # Generate background events
-  data <- G <- sim_background_events(background_rate, new_region, cov_map = cov_map)
+  data <- G <- sim_background_events(background_rate,
+                                     temporal_window_burnin, spatial_region_burnin,
+                                     cov_map = cov_map)
 
   # Specify generation l
   l <- 0
 
   while (TRUE) {
-    O <- hawkes(params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family)
+    O <- hawkes(params = params, temporal_window = temporal_window_burnin, spatial_region = spatial_region_burnin,
+                spatial_family = spatial_family, temporal_family = temporal_family)
     l <- l+1
 
 

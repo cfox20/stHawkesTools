@@ -14,7 +14,7 @@
 #' @returns A hawkes object containing a tibble with the events.
 #' @export
 #'
-hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = NULL, temporal_family = NULL, cov_map = NULL, X = NULL) {
+hawkes <- function(data = NULL, params = NULL, time_window = NULL, spatial_region = NULL, spatial_family = NULL, temporal_family = NULL, cov_map = NULL, X = NULL) {
   if (is.null(data)) {
     data <- data.frame(x = numeric(), y = numeric(), t = numeric())
   }
@@ -34,8 +34,12 @@ hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = N
     stop("Provide temporal triggering family.")
   }
 
-  if (!is.null(region) && !is.list(region) && !is.numeric(region)) {
-    stop("'region' should be a spatial window defined as a named list (e.g., list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax))).")
+  if (!is.null(spatial_region) && !(class(spatial_region)[1] == "sf")) {
+    stop("'spatial_region' must be a sf object defining the spatial region for the observed Hawkes process.")
+  }
+
+  if (!is.null(time_window) && !is.numeric(time_window) && !(length(time_window) == 2)) {
+    stop("'time_window' must be a numeric vector defining the observed time window (e.g. c(0, 100))")
   }
 
   if (!is.null(params) && (!is.list(params) | is.null(params$background_rate) | is.null(params$triggering_rate) | is.null(params$spatial) | is.null(params$temporal))) {
@@ -137,7 +141,8 @@ hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = N
   structure(
     data[c("x", "y", "t", setdiff(names(data), c("x", "y", "t")))],
     params = params,
-    region = region,
+    time_window = time_window,
+    spatial_region = spatial_region,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
     cov_map = cov_map,
@@ -180,14 +185,16 @@ hawkes <- function(data = NULL, params = NULL, region = NULL, spatial_family = N
 #' )
 #'
 #' # Convert to hawkes object
-#' region <- list(x = c(0, 10), y = c(0, 10), t = c(0, 50))
-#' hawkes_df <- as_hawkes(df, region, spatial_family = "Gaussian", temporal_family = "Exponential")
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
 #' print(hawkes_df)
 #'
-as_hawkes <- function(data, region, spatial_family, temporal_family, params = NULL, cov_map = NULL, X = NULL) {
+as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, cov_map = NULL, X = NULL) {
   stopifnot(is.data.frame(data))
 
-  hawkes(data = data, params = params, region = region, spatial_family = spatial_family, temporal_family = temporal_family,
+  hawkes(data = data, params = params,
+         time_window = time_window, spatial_region = spatial_region,
+         spatial_family = spatial_family, temporal_family = temporal_family,
          cov_map = cov_map, X = X)
 }
 
@@ -205,11 +212,18 @@ print.hawkes <- function(x, n = 10, ...) {
   cat("<hawkes object>\n\n")
   cat("Number of events:", nrow(x), "\n\n")
 
-  region <- attr(x, "region")
-  cat("Region:\n")
-  cat(sprintf("  $x: [%g, %g]\n", region$x[1], region$x[2]))
-  cat(sprintf("  $y: [%g, %g]\n", region$y[1], region$y[2]))
-  cat(sprintf("  $t: [%g, %g]\n\n", region$t[1], region$t[2]))
+  spatial_region <- attr(x, "region")
+  time_window <- attr(x, "time_window")
+  cat("Spatial Region:\n")
+  print(region)
+
+  cat("\nTime Window:\n")
+  print(time_window)
+
+
+  # cat(sprintf("  $x: [%g, %g]\n", region$x[1], region$x[2]))
+  # cat(sprintf("  $y: [%g, %g]\n", region$y[1], region$y[2]))
+  # cat(sprintf("  $t: [%g, %g]\n\n", region$t[1], region$t[2]))
 
   # cov_map <- attr(x, "cov_map")
   # if (!is.null(cov_map)) {

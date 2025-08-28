@@ -4,14 +4,19 @@
 \alias{sim_background_events}
 \title{Simulate background events}
 \usage{
-sim_background_events(background_rate, region, cov_map = NULL)
+sim_background_events(
+  background_rate,
+  time_window,
+  spatial_region,
+  cov_map = NULL
+)
 }
 \arguments{
 \item{background_rate}{A vector of coefficients for the background covariates.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
-
 \item{cov_map}{An sf object containing background covariates.}
+
+\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
 }
 \value{
 A dataframe with generated background events.
@@ -20,8 +25,9 @@ A dataframe with generated background events.
 Simulate background events
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+spatial_region <- create_rectangular_sf(0,10,0,10)
+time_window <- c(0,50)
 background_rate <- -4
 
-sim_background_events(background_rate, region)
+sim_background_events(background_rate, time_window, spatial_region)
 }

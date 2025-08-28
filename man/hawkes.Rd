@@ -7,7 +7,8 @@
 hawkes(
   data = NULL,
   params = NULL,
-  region = NULL,
+  time_window = NULL,
+  spatial_region = NULL,
   spatial_family = NULL,
   temporal_family = NULL,
   cov_map = NULL,
@@ -19,8 +20,6 @@ hawkes(
 
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
-
 \item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
 
 \item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
@@ -28,6 +27,8 @@ hawkes(
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
 
 \item{X}{A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.}
+
+\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
 }
 \value{
 A hawkes object containing a tibble with the events.
