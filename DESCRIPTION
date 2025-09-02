@@ -16,6 +16,7 @@ Imports:
     nleqslv,
     purrr,
     sf,
+    sftime,
     tibble
 Depends: 
     R (>= 2.10)

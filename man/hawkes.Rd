@@ -11,8 +11,8 @@ hawkes(
   spatial_region = NULL,
   spatial_family = NULL,
   temporal_family = NULL,
-  cov_map = NULL,
-  X = NULL
+  covariate_columns = NULL,
+  cov_map = NULL
 )
 }
 \arguments{
@@ -25,8 +25,6 @@ hawkes(
 \item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
 
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
-
-\item{X}{A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.}
 
 \item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
 }

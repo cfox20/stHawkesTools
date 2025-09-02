@@ -8,6 +8,7 @@ sim_background_events(
   background_rate,
   time_window,
   spatial_region,
+  covariate_columns = covariate_columns,
   cov_map = NULL
 )
 }

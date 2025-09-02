@@ -6,10 +6,12 @@
 \usage{
 rHawkes(
   params,
-  region,
-  t_burnin = 10,
-  s_burnin = 0,
+  time_window,
+  spatial_region,
+  covariate_columns = NULL,
   cov_map = NULL,
+  temporal_burnin = 10,
+  spatial_burnin = 2,
   spatial_family = "Gaussian",
   temporal_family = "Exponential"
 )
@@ -17,17 +19,17 @@ rHawkes(
 \arguments{
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
-
-\item{t_burnin}{Temporal burn-in for simulation. Defaults to 10 if not used.}
-
-\item{s_burnin}{Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.}
-
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
 
 \item{spatial_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
 
 \item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+
+\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
+
+\item{t_burnin}{Temporal burn-in for simulation. Defaults to 10 if not used.}
+
+\item{s_burnin}{Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.}
 }
 \value{
 A hawkes object with a generated Hawkes process.
@@ -36,19 +38,19 @@ A hawkes object with a generated Hawkes process.
 Generate a Hawkes Process
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-rHawkes(params, region)
+rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
-rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
+rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_family = "Uniform", temporal_family = "Gamma")
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
+rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_family = "Exponential", temporal_family = "Exponential")
 
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")
-rHawkes(params, region, cov_map = example_background_covariates)
+rHawkes(params, c(0,50), spatial_region, cov_map = example_background_covariates)
 }

@@ -9,21 +9,26 @@
 #' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
 #' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
 #' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
-#' @param X A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.
 #'
 #' @returns A hawkes object containing a tibble with the events.
 #' @export
 #'
-hawkes <- function(data = NULL, params = NULL, time_window = NULL, spatial_region = NULL, spatial_family = NULL, temporal_family = NULL, cov_map = NULL, X = NULL) {
+hawkes <- function(data = NULL, params = NULL,
+                   time_window = NULL, spatial_region = NULL,
+                   spatial_family = NULL, temporal_family = NULL,
+                   covariate_columns = NULL, cov_map = NULL) {
   if (is.null(data)) {
-    data <- data.frame(x = numeric(), y = numeric(), t = numeric())
+    data <- data.frame(x = numeric(), y = numeric(), t = numeric()) |>
+      sf::st_as_sf(coords = c("x", "y"), crs = NA) |>
+      suppressWarnings() |>
+      dplyr::mutate(x = numeric(), y = numeric(), .before = t)
   }
 
 
 # Argument Checks ---------------------------------------------------------
 
-  if (!all(c("x", "y", "t") %in% names(data))) {
-    stop("Data must contain columns 'x', 'y', and 't'.")
+  if (class(data)[1] != "sf" | !all(c("x", "y", "t") %in% names(data))) {
+    stop("data must be a sftime object and contain columns x, y, and t.")
   }
 
   if (is.null(spatial_family)) {
@@ -128,25 +133,19 @@ hawkes <- function(data = NULL, params = NULL, time_window = NULL, spatial_regio
     stop(paste("Spatial parameter names are missing in temporal sampler function arguments."))
   }
 
-  if (!is.null(X) & !is.null(cov_map)) {
-    missing_covariates <- setdiff(colnames(X), colnames(cov_map))
-    if (length(missing_covariates) > 0) {
-      stop("The following covariates in X are missing from cov_map: ",
-           paste(missing, collapse = ", "))
-    }
-  }
 
 # Output object -----------------------------------------------------------
 
   structure(
-    data[c("x", "y", "t", setdiff(names(data), c("x", "y", "t")))],
+    # data[,c(covariate_columns)],
+    data |> dplyr::arrange(t),
     params = params,
     time_window = time_window,
     spatial_region = spatial_region,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
     cov_map = cov_map,
-    X = X,
+    covariate_columns = covariate_columns,
     spatial_sampler = spatial_sampler,
     spatial_pdf = spatial_pdf,
     spatial_cdf = spatial_cdf,
@@ -170,7 +169,6 @@ hawkes <- function(data = NULL, params = NULL, time_window = NULL, spatial_regio
 #' @param temporal_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
 #' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.
 #' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
-#' @param X A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.
 #'
 #' @returns A hawkes object.
 #' @export
@@ -189,13 +187,18 @@ hawkes <- function(data = NULL, params = NULL, time_window = NULL, spatial_regio
 #' hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
 #' print(hawkes_df)
 #'
-as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, cov_map = NULL, X = NULL) {
-  stopifnot(is.data.frame(data))
+as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL, cov_map = NULL) {
+  if (class(data)[1] == "sf") {
+    data
+  }
 
+  if (class(data)[1] == "data.frame") {
+
+  }
   hawkes(data = data, params = params,
          time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family,
-         cov_map = cov_map, X = X)
+         covariate_columns = covariate_columns, cov_map = cov_map)
 }
 
 
@@ -215,7 +218,7 @@ print.hawkes <- function(x, n = 10, ...) {
   spatial_region <- attr(x, "region")
   time_window <- attr(x, "time_window")
   cat("Spatial Region:\n")
-  print(region)
+  print(spatial_region)
 
   cat("\nTime Window:\n")
   print(time_window)

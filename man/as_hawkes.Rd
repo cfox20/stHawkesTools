@@ -11,8 +11,8 @@ as_hawkes(
   spatial_family,
   temporal_family,
   params = NULL,
-  cov_map = NULL,
-  X = NULL
+  covariate_columns = NULL,
+  cov_map = NULL
 )
 }
 \arguments{
@@ -25,8 +25,6 @@ as_hawkes(
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
 
 \item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
-
-\item{X}{A dataframe with nrow(data) rows containing the covariates observed at each event. Defaults to NULL if not used.}
 
 \item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
 }
