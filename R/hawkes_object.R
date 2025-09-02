@@ -28,7 +28,7 @@ hawkes <- function(data = NULL, params = NULL,
 # Argument Checks ---------------------------------------------------------
 
   if (class(data)[1] != "sf" | !all(c("x", "y", "t") %in% names(data))) {
-    stop("data must be a sftime object and contain columns x, y, and t.")
+    stop("data must be a sf object and contain columns x, y, and t.")
   }
 
   if (is.null(spatial_family)) {
@@ -40,6 +40,7 @@ hawkes <- function(data = NULL, params = NULL,
   }
 
   if (!is.null(spatial_region) && !(class(spatial_region)[1] == "sf")) {
+    print(spatial_region)
     stop("'spatial_region' must be a sf object defining the spatial region for the observed Hawkes process.")
   }
 
@@ -188,13 +189,10 @@ hawkes <- function(data = NULL, params = NULL,
 #' print(hawkes_df)
 #'
 as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL, cov_map = NULL) {
-  if (class(data)[1] == "sf") {
-    data
-  }
+  # if (class(data)[1] == "data.frame") {
+  #
+  # }
 
-  if (class(data)[1] == "data.frame") {
-
-  }
   hawkes(data = data, params = params,
          time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family,

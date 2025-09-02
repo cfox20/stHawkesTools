@@ -59,7 +59,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region,
                        family = NULL)
     }
 
-    sample <- st_sf(geometry = sf::st_sample(spatial_region, num_events, type = "random", exact = TRUE)) |>
+    sample <- sf::st_sf(geometry = sf::st_sample(spatial_region, num_events, type = "random", exact = TRUE)) |>
       sf::st_as_sf()
 
     background_events <- sample |>
@@ -152,7 +152,7 @@ rHawkes <- function(params, time_window, spatial_region,
     .unpack_hawkes()
 
   # Set burnin regions
-  spatial_region_burnin <- sf::st_buffer(spatial_region |> sf::st_union(), spatial_burnin)
+  spatial_region_burnin <- sf::st_buffer(spatial_region |> sf::st_union(), spatial_burnin) |> sf::st_as_sf()
 
   crs <- sf::st_crs(spatial_region)
 
