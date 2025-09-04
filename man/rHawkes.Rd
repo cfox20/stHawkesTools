@@ -10,8 +10,8 @@ rHawkes(
   spatial_region,
   covariate_columns = NULL,
   cov_map = NULL,
-  temporal_burnin = 10,
-  spatial_burnin = 2,
+  temporal_burnin = (time_window[2] - time_window[1])/(10),
+  spatial_burnin = sf::st_area(spatial_region)^0.25,
   spatial_family = "Gaussian",
   temporal_family = "Exponential"
 )
@@ -40,7 +40,7 @@ Generate a Hawkes Process
 \examples{
 spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
 rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
@@ -50,7 +50,7 @@ params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spat
 rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_family = "Exponential", temporal_family = "Exponential")
 
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.85,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")
-rHawkes(params, c(0,50), spatial_region, cov_map = example_background_covariates)
+rHawkes(params, c(0,50), spatial_region, cov_map = example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0) |> ggplot() + geom_sf()
 }
