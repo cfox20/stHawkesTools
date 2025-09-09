@@ -12,7 +12,7 @@ passed to the log-likelihood function.}
 
 \item{est}{A list of estimated parameter values (typically the output of an EM or MLE routine),
 used as the starting point for computing the Hessian. Must match the structure expected by
-\code{.flatten_free_params()} and \code{.vector_input_full_log_likelihood()}.}
+\code{.flatten_free_params()} and \code{.vector_input_log_likelihood()}.}
 }
 \value{
 A named covariance matrix corresponding to the estimated parameters.

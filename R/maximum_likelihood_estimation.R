@@ -8,13 +8,17 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#'
 #' (parent_est_mat <- parent_est(hawkes, params))
 #'
-parent_est <- function(hawkes, parameters = NULL) {
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' data("example_background_covariates")
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+parent_est <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
@@ -25,15 +29,11 @@ parent_est <- function(hawkes, parameters = NULL) {
 
   .unpack_hawkes(hawkes)
 
-  if (is.null(parameters)) {
-    message("True parameters stored in Hawkes object are being used for parent estimation. If estimated parameters are desired, pass the estimates to the parameters argument.")
-    parameters <- params
-  }
-
-  if(!exists("X", inherits = FALSE)){
+  if(!exists("covariate_columns", inherits = FALSE)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
-    X <- cbind(1, X)
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
+      as.matrix()
   }
 
   background_rate <- parameters$background_rate
@@ -111,11 +111,16 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
     parameters <- params
   }
 
-  if(!exists("X", inherits = FALSE)){
+  if(!exists("covariate_columns", inherits = FALSE)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
-    X <- cbind(1, X)
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
+      as.matrix()
   }
+
+  spatial_area <- spatial_region |>
+    sf::st_area() |>
+    sum()
 
   background_rate <- parameters$background_rate
   triggering_rate <- parameters$triggering_rate
@@ -134,56 +139,32 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
   time_diff <- outer(hawkes$t, hawkes$t, `-`)
   time_diff[upper.tri(time_diff)] <- 0
 
-  x_min <- region$x[1]
-  x_max <- region$x[2]
-  y_min <- region$y[1]
-  y_max <- region$y[2]
-  t_min <- region$t[1]
-  t_max <- region$t[2]
 
   # Estimation if a boundary is being used
   if (!is.null(boundary)) {
-    s_boundary <- boundary[1]
-    t_boundary <- boundary[2]
+    spatial_region <- spatial_region |>
+      sf::st_buffer(-boundary)
 
-    x_min <- x_min + s_boundary
-    x_max <- x_max - s_boundary
-    y_min <- y_min + s_boundary
-    y_max <- y_max - s_boundary
-    t_min <- t_min + t_boundary
 
     # Find the index of values that fall within the boundary region S0
-    outside_S <- {(hawkes$x < x_min) | (hawkes$x > x_max) |
-        (hawkes$y < y_min) | (hawkes$y > y_max) |
-        (hawkes$t < t_min)
-    }
+    outside_S <- lengths(sf::st_within(hawkes, spatial_region_boundary)) <= 0
     # Set the rows of the events in S0 to 0 in the parent matrix
     parent_est_mat[outside_S,] <- 0
 
     hawkes <- hawkes[!outside_S,]
-
-    if (exists("cov_map")) {
-      subregion <- sf::st_bbox(c(xmin = x_min + boundary[1], xmax = x_max - boundary[1],
-                                 ymin = y_min + boundary[1], ymax = y_max - boundary[1]),
-                      crs = sf::st_crs(cov_map)) |>
-                   sf::st_as_sfc() |>
-                   sf::st_as_sf()
-      cov_map <- sf::st_intersection(cov_map, subregion) |>
-        suppressWarnings()
-    }
   }
 
   if (length(background_rate) > 1) {
-    background_rate_update <- nleqslv::nleqslv(background_rate, background_covariates_function, jac = NULL, hawkes, parent_est_mat, X, cov_map, region)$x
+    background_rate_update <- nleqslv::nleqslv(background_rate, background_covariates_function, jac = NULL, hawkes, parent_est_mat, time_window,  spatial_region, covariate_columns, X)$x
   } else {
-    background_rate_update <- log(sum(diag(parent_est_mat)) / ((t_max - t_min) * (x_max - x_min) * (y_max - y_min)))
+    background_rate_update <- log(sum(diag(parent_est_mat)) / ((time_window[2] - time_window[1]) * spatial_area))
   }
   background_rate_update <- as.list(background_rate_update)
   names(background_rate_update) <- background_rate_names
 
   diag(parent_est_mat) <- 0
 
-  triggering_rate_update <- sum(parent_est_mat) / sum(do.call(temporal_cdf, c(list(q = t_max - hawkes$t), temporal_params)))
+  triggering_rate_update <- sum(parent_est_mat) / sum(do.call(temporal_cdf, c(list(q = time_window[2] - hawkes$t), temporal_params)))
 
   # Hardcode analytic solutions if available for the MLE
 
@@ -203,7 +184,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
   if (spatial_family == "Gaussian" && temporal_family == "Exponential") {
     # triggering_rate_update <- sum(parent_est_mat) / (sum(1 - exp(-temporal_params$rate * (t_max - hawkes$t))))
 
-    temporal_param_updates <- list(rate = sum(parent_est_mat) / (sum(parent_est_mat * time_diff) + triggering_rate_update * sum((t_max - hawkes$t)*exp(-temporal_params$rate * (t_max - hawkes$t)))))
+    temporal_param_updates <- list(rate = sum(parent_est_mat) / (sum(parent_est_mat * time_diff) + triggering_rate_update * sum((time_window[2] - hawkes$t)*exp(-temporal_params$rate * (time_window[2] - hawkes$t)))))
 
     spatial_param_updates <- list(mean = 0, sd = sqrt(sum(parent_est_mat * (x_diff^2 + y_diff^2)) / (2 * sum(parent_est_mat))))
 
@@ -237,19 +218,16 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' @export
 #'
 #' @examples
-#' set.seed(123)
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' hawkes_mle(hawkes, inits = params)
 #'
-#'
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-#' (est <- hawkes_mle(hawkes, inits = params))
-#' (est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+#' hawkes_mle(hawkes, inits = params)
 hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
@@ -274,7 +252,7 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
   est1 <- est_params(hawkes, inits, parent_est_mat, boundary = boundary,
                      fixed_spatial = fixed_spatial, fixed_temporal = fixed_temporal)
 
-  full_like_1 <- full_log_likelihood(hawkes, est1)
+  likelihood_1 <- log_likelihood(hawkes, est1)
 
   for (i in 1:max_iters) {
     parent_est_mat <- parent_est(hawkes, est1)
@@ -286,15 +264,15 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
       print(est2)
     }
 
-    full_like_2 <- full_log_likelihood(hawkes, est2)
+    likelihood_2 <- log_likelihood(hawkes, est2)
 
     # Check if the full likelihood has converged
-    if (abs(full_like_2 - full_like_1) < 10e-10) {
+    if (abs(likelihood_2 - likelihood_1) < 10e-10) {
       est2$fixed <- inits$fixed
       return(new_hawkes_fit(hawkes, est2))
     }
     est1 <- est2
-    full_like_1 <- full_like_2
+    likelihood_1 <- likelihood_2
   }
 
   est2$fixed <- inits$fixed
@@ -314,7 +292,7 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 #'   passed to the log-likelihood function.
 #' @param est A list of estimated parameter values (typically the output of an EM or MLE routine),
 #'   used as the starting point for computing the Hessian. Must match the structure expected by
-#'   `.flatten_free_params()` and `.vector_input_full_log_likelihood()`.
+#'   `.flatten_free_params()` and `.vector_input_log_likelihood()`.
 #'
 #' @return A named covariance matrix corresponding to the estimated parameters.
 #'
@@ -338,7 +316,7 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 hessian_est <- function(hawkes, est) {
   est_vec <- .flatten_free_params(est)
 
-  hessian <- numDeriv::hessian(.vector_input_full_log_likelihood, est_vec, hawkes = hawkes, param_template = est)
+  hessian <- numDeriv::hessian(.vector_input_log_likelihood, est_vec, hawkes = hawkes, param_template = est)
   cov_est <- solve(-1 * hessian)
 
   colnames(cov_est) <- names(est_vec)
@@ -353,7 +331,7 @@ hessian_est <- function(hawkes, est) {
 #' Computes Wald-style confidence intervals for the parameters of a spatio-temporal Hawkes process
 #' using the estimated covariance matrix from the observed information (negative Hessian).
 #'
-#' @param hawkes A `hawkes` object containing the observed point pattern and model setup.
+#' @param hawkes_fit A `hawkes` object containing the observed point pattern and model setup.
 #' @param est A nested list of estimated parameters, typically the output from `hawkes_mle()`.
 #' @param conf_level Confidence level for the interval, e.g., 0.95 for 95% intervals. Default is 0.95.
 #'
@@ -368,23 +346,23 @@ hessian_est <- function(hawkes, est) {
 #'
 #' @examples
 #' set.seed(123)
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
-#' wald_int(hawkes, est)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' est <- hawkes_mle(hawkes, inits = params)
+#' confint(est)
 #'
 #'
-#' #' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-#' wald_int(hawkes, est)
-wald_int <- function(hawkes, est, conf_level = 0.95) {
-  if (class(est)[1] == "hawkes_fit") {
-    est <- est$est
-  }
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' data("example_background_covariates")
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+#' est <- hawkes_mle(hawkes, inits = params)
+#' confint(est)
+confint.hawkes_fit <- function(hawkes_fit, conf_level = 0.95) {
+  hawkes <- hawkes_fit$hawkes
+
+  est <- hawkes_fit$est
 
   alpha <- 1 - conf_level
 

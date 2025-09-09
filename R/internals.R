@@ -22,7 +22,7 @@
     stop("Object must be a hawkes object.")
   }
 
-  required_attrs <- c("spatial_pdf", "temporal_pdf", "spatial_cdf", "temporal_cdf", "region")
+  required_attrs <- c("spatial_pdf", "temporal_pdf", "spatial_cdf", "temporal_cdf", "spatial_region")
 
   missing_attrs <- required_attrs[!required_attrs %in% names(attributes(hawkes))]
 
@@ -164,9 +164,9 @@
 #' @export
 #'
 #' @keywords internal
-.vector_input_full_log_likelihood <- function(par_vec, hawkes, param_template) {
+.vector_input_log_likelihood <- function(par_vec, hawkes, param_template) {
   parameters <- .vector_to_params(par_vec, param_template)
-  full_log_likelihood(hawkes, parameters)
+  log_likelihood(hawkes, parameters)
 }
 
 

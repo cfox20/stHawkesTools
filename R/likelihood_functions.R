@@ -30,12 +30,10 @@ conditional_intensity <- function(hawkes, parameters) {
 
   background_rate <- as.numeric(background_rate)
 
-  if (length(background_rate) == 1) {
-    X <- 1
-  } else{
-    if (dim(X)[2] - length(background_rate) == -1) {
-      X <- cbind(1,X)
-    }
+  if(!exists("covariate_columns", inherits = FALSE)){
+    X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
+  } else {
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry() |> as.matrix())
   }
 
 
@@ -67,7 +65,7 @@ conditional_intensity <- function(hawkes, parameters) {
   g_mat[upper.tri(g_mat, diag = TRUE)] <- 0
 
   # Store the values of the complete likelihood at each point
-  exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
+  as.numeric(exp(as.numeric(X %*% background_rate)) + rowSums(g_mat))
 }
 
 
@@ -141,15 +139,13 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
   if (length(background_rate) == 1) {
     X <- 1
   } else{
-    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
-
-    X <- sf::st_as_sf(grid, coords = c("Var1", "Var2"), crs = sf::st_crs(cov_map)) |>
-      sf::st_join(cov_map, join = sf::st_intersects) |>
+    X <- sf::st_as_sf(grid, coords = c("Var1", "Var2"), crs = sf::st_crs(spatial_region)) |>
+      sf::st_join(spatial_region, join = sf::st_intersects) |>
       dplyr::mutate(.wkt = sf::st_as_text(geometry)) |>
       dplyr::distinct(.wkt, .keep_all = TRUE) |>
       dplyr::select(-.wkt) |>
       sf::st_drop_geometry() |>
-      dplyr::select(all_of(cov_names)) |>
+      dplyr::select(all_of(covariate_columns)) |>
       as.matrix()
     X <- cbind(1, X)
   }
@@ -228,15 +224,13 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   if (length(background_rate) == 1) {
     X <- 1
   } else{
-    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
-
-    X <- sf::st_as_sf(data.frame(t(coordinates)), coords = c("X1", "X2"), crs = sf::st_crs(cov_map)) |>
-      sf::st_join(cov_map, join = sf::st_intersects) |>
+    X <- sf::st_as_sf(data.frame(t(coordinates)), coords = c("X1", "X2"), crs = sf::st_crs(spatial_region)) |>
+      sf::st_join(spatial_region, join = sf::st_intersects) |>
       dplyr::mutate(.wkt = sf::st_as_text(geometry)) |>
       dplyr::distinct(.wkt, .keep_all = TRUE) |>
       dplyr::select(-.wkt) |>
       sf::st_drop_geometry() |>
-      dplyr::select(all_of(cov_names)) |>
+      dplyr::select(all_of(covariate_columns)) |>
       as.matrix()
     X <- cbind(1, X)
   }
@@ -246,11 +240,12 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   data.frame(x = x,
              y = y,
              t = t_grid,
-             intensity = exp(as.numeric(X %*% background_rate)) + rowSums(g_mat))
+             intensity = exp(as.numeric(X %*%
+                                          background_rate)) + rowSums(g_mat))
 }
 
 
-#' Compute Full Log-Likelihood
+#' Compute Log-Likelihood
 #'
 #' @param hawkes A hawkes object
 #' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
@@ -259,20 +254,17 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, region)
-#' full_log_likelihood(hawkes, params)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, c(0,50), spatial_region)
+#' log_likelihood(hawkes, params)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(min = -1, max = 1),temporal = list(shape = 3, rate = 1))
-#' hawkes <- rHawkes(params, region, spatial_family = "Uniform", temporal_family = "Gamma")
-#' full_log_likelihood(hawkes, params)
-#'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(rate = 5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, region, spatial_family = "Exponential", temporal_family = "Exponential")
-#' full_log_likelihood(hawkes, params)
-full_log_likelihood <- function(hawkes, parameters) {
+#' data("example_background_covariates")
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+#' log_likelihood(hawkes, params)
+log_likelihood <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
@@ -290,13 +282,7 @@ full_log_likelihood <- function(hawkes, parameters) {
 
   background_rate <- as.numeric(background_rate)
 
-  # Region bounds
-  x_min <- region$x[1]
-  x_max <- region$x[2]
-  y_min <- region$y[1]
-  y_max <- region$y[2]
-  t_min <- region$t[1]
-  t_max <- region$t[2]
+  time_length <- time_window[2] - time_window[1]
 
   # Conditional intensity at observed events
   log_lambda <- log(conditional_intensity(hawkes, parameters))
@@ -305,44 +291,44 @@ full_log_likelihood <- function(hawkes, parameters) {
   log_part <- sum(log_lambda)
 
   # Background integral (spatial + temporal)
-  if (exists("cov_map", inherits = FALSE)) {
-    cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
-
-    cov_map_X <- cov_map |>
+  if (exists("covariate_columns", inherits = FALSE)) {
+    covariate_map <- spatial_region |>
       sf::st_drop_geometry() |>
-      dplyr::select(cov_names) |>
+      dplyr::select(dplyr::all_of(covariate_columns)) |>
       as.matrix()
-    cov_map_X <- cbind(1, cov_map_X)
-    area <- cov_map$area
+    covariate_map <- cbind(1, covariate_map)
+    area <- spatial_region$area
 
-    background_rates <- area * exp(cov_map_X %*% background_rate)
-    background_integral <- t_max * sum(background_rates)
+    background_rates <- area * exp(covariate_map %*% background_rate)
+    background_integral <- time_length * sum(background_rates)
   } else {
     # No covariates — scalar background
-    background_integral <- (t_max - t_min) * (x_max - x_min) * (y_max - y_min) * exp(background_rate)
+    background_integral <- time_length * sf::st_area(spatial_region) * exp(background_rate)
   }
 
 
-  if (!spatial_is_separable) {
-    upper <- cbind(region$x[2] - hawkes$x, region$y[2] - hawkes$y)
-    lower <- cbind(region$x[1] - hawkes$x, region$y[1] - hawkes$y)
-
-    spatial_mass <- do.call(spatial_cdf, c(list(q = upper), spatial_params)) -
-                    do.call(spatial_cdf, c(list(q = lower), spatial_params))
-
-  } else {
-    spatial_mass <- (
-      do.call(spatial_cdf, c(list(q = region$x[2] - hawkes$x), spatial_params)) -
-      do.call(spatial_cdf, c(list(q = region$x[1] - hawkes$x), spatial_params))
-    ) * (
-      do.call(spatial_cdf, c(list(q = region$y[2] - hawkes$y), spatial_params)) -
-      do.call(spatial_cdf, c(list(q = region$y[1] - hawkes$y), spatial_params))
-    )
-  }
-
+  # if (!spatial_is_separable) {
+  #   upper <- cbind(region$x[2] - hawkes$x, region$y[2] - hawkes$y)
+  #   lower <- cbind(region$x[1] - hawkes$x, region$y[1] - hawkes$y)
+  #
+  #   spatial_mass <- do.call(spatial_cdf, c(list(q = upper), spatial_params)) -
+  #                   do.call(spatial_cdf, c(list(q = lower), spatial_params))
+  #
+  # } else {
+  #   spatial_mass <- (
+  #     do.call(spatial_cdf, c(list(q = region$x[2] - hawkes$x), spatial_params)) -
+  #     do.call(spatial_cdf, c(list(q = region$x[1] - hawkes$x), spatial_params))
+  #   ) * (
+  #     do.call(spatial_cdf, c(list(q = region$y[2] - hawkes$y), spatial_params)) -
+  #     do.call(spatial_cdf, c(list(q = region$y[1] - hawkes$y), spatial_params))
+  #   )
+  # }
+  # This is an approximation by assuming the the integral over the spatial region integrates to 1.
+  # This is done to simplify the computation for non-square spatial regions
+  # and should only cause problems if there are many events near the edge of the observed spatial region.
   triggering_integral <- triggering_rate * sum(
-    do.call(temporal_cdf, c(list(q = region$t[2] - hawkes$t), temporal_params)) *
-    spatial_mass
+    do.call(temporal_cdf, c(list(q = time_window[2] - hawkes$t), temporal_params))
+    # spatial_mass
   )
 
   return(log_part - background_integral - triggering_integral)

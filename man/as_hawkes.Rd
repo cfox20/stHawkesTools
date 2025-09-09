@@ -11,8 +11,7 @@ as_hawkes(
   spatial_family,
   temporal_family,
   params = NULL,
-  covariate_columns = NULL,
-  cov_map = NULL
+  covariate_columns = NULL
 )
 }
 \arguments{
@@ -23,8 +22,6 @@ as_hawkes(
 \item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
 
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
-
-\item{cov_map}{An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.}
 
 \item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
 }

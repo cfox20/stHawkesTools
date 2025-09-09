@@ -8,7 +8,6 @@
 #' @param region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.
 #' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
 #' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
-#' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
 #'
 #' @returns A hawkes object containing a tibble with the events.
 #' @export
@@ -16,7 +15,7 @@
 hawkes <- function(data = NULL, params = NULL,
                    time_window = NULL, spatial_region = NULL,
                    spatial_family = NULL, temporal_family = NULL,
-                   covariate_columns = NULL, cov_map = NULL) {
+                   covariate_columns = NULL) {
   if (is.null(data)) {
     data <- data.frame(x = numeric(), y = numeric(), t = numeric()) |>
       sf::st_as_sf(coords = c("x", "y"), crs = NA) |>
@@ -145,7 +144,6 @@ hawkes <- function(data = NULL, params = NULL,
     spatial_region = spatial_region,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
-    cov_map = cov_map,
     covariate_columns = covariate_columns,
     spatial_sampler = spatial_sampler,
     spatial_pdf = spatial_pdf,
@@ -169,7 +167,6 @@ hawkes <- function(data = NULL, params = NULL,
 #' @param spatial_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
 #' @param temporal_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
 #' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.
-#' @param cov_map An sf object containing spatial polygons with associated covariate values named X1, X2, .... Defaults to NULL if not used.
 #'
 #' @returns A hawkes object.
 #' @export
@@ -188,7 +185,7 @@ hawkes <- function(data = NULL, params = NULL,
 #' hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
 #' print(hawkes_df)
 #'
-as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL, cov_map = NULL) {
+as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL) {
   # if (class(data)[1] == "data.frame") {
   #
   # }
@@ -196,7 +193,7 @@ as_hawkes <- function(data, time_window, spatial_region, spatial_family, tempora
   hawkes(data = data, params = params,
          time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family,
-         covariate_columns = covariate_columns, cov_map = cov_map)
+         covariate_columns = covariate_columns)
 }
 
 
@@ -221,15 +218,6 @@ print.hawkes <- function(x, n = 10, ...) {
   cat("\nTime Window:\n")
   print(time_window)
 
-
-  # cat(sprintf("  $x: [%g, %g]\n", region$x[1], region$x[2]))
-  # cat(sprintf("  $y: [%g, %g]\n", region$y[1], region$y[2]))
-  # cat(sprintf("  $t: [%g, %g]\n\n", region$t[1], region$t[2]))
-
-  # cov_map <- attr(x, "cov_map")
-  # if (!is.null(cov_map)) {
-  #   print(cov_map)
-  # }
 
     params <- attr(x, "params")
   if (!is.null(params)) {

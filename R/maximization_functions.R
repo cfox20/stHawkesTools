@@ -98,16 +98,16 @@
 
 
 
-background_covariates_function <- function(background_rate, hawkes, parent_est_mat, X, cov_map, region) {
-  cov_names <- colnames(cov_map)[!(colnames(cov_map) %in% c("geoid", "name", "area", "geometry"))]
-
-  cov_map_X <- cov_map |>
+background_covariates_function <- function(background_rate, hawkes, parent_est_mat, time_window, spatial_region, covariate_columns, X) {
+  # Make matrix of background covariate values for each region
+  cov_map_X <- spatial_region |>
     sf::st_drop_geometry() |>
-    dplyr::select(all_of(cov_names)) |>
+    dplyr::select(all_of(covariate_columns)) |>
     as.matrix()
+
   cov_map_X <- cbind(1, cov_map_X)
-  area <- cov_map$area
-  t_length <- region$t[[2]] - region$t[[1]]
+  area <- spatial_region$area
+  t_length <- time_window[2] - time_window[1]
 
   background_term <- as.numeric(t(diag(parent_est_mat)) %*% X)
 

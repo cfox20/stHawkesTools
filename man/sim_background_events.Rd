@@ -8,16 +8,15 @@ sim_background_events(
   background_rate,
   time_window,
   spatial_region,
-  covariate_columns = covariate_columns,
-  cov_map = NULL
+  covariate_columns = NULL
 )
 }
 \arguments{
 \item{background_rate}{A vector of coefficients for the background covariates.}
 
-\item{cov_map}{An sf object containing background covariates.}
+\item{spatial_region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
+\item{covariate_columns}{A character vector of the names of the columns in spatial_region to be used as background covariates.}
 }
 \value{
 A dataframe with generated background events.

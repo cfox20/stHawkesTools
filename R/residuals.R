@@ -47,18 +47,14 @@ time_scaled_residuals <- function(hawkes, est) {
 
   background_rate <- as.numeric(background_rate)
 
-  if(!exists("X", inherits = FALSE)){
+  if(!exists("covariate_columns", inherits = FALSE)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
-    X <- cbind(1, X)
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
+      as.matrix()
   }
 
-  x_min <- region$x[1]
-  x_max <- region$x[2]
-  y_min <- region$y[1]
-  y_max <- region$y[2]
-  t_min <- region$t[1]
-  t_max <- region$t[2]
+  spatial_area <- sf::st_area(spatial_region) |> sum()
 
   x_diff <- outer(hawkes$x, hawkes$x, `-`)
   x_diff[upper.tri(x_diff, diag = FALSE)] <- 0
@@ -66,7 +62,7 @@ time_scaled_residuals <- function(hawkes, est) {
   y_diff[upper.tri(y_diff, diag = FALSE)] <- 0
 
   t_i   <- hawkes$t
-  t_im1 <- dplyr::lag(t_i, default = t_min)
+  t_im1 <- dplyr::lag(t_i, default = time_window[1])
 
   time_diff     <- outer(t_i, t_i, `-`)
   time_diff_lag <- outer(t_im1, t_i, `-`)
@@ -75,36 +71,34 @@ time_scaled_residuals <- function(hawkes, est) {
   time_diff[!lower.tri(time_diff)] <- 0
   time_diff_lag[!lower.tri(time_diff_lag)] <- 0
 
-  w <- hawkes$t - dplyr::lag(hawkes$t, default = t_min)
+  w <- hawkes$t - dplyr::lag(hawkes$t, default = time_window[1])
 
   # Store integral of background rate
-  if (exists("cov_map")) {
-    cov_cols <- colnames(X)[-1]
-
-    cov_df <- cov_map |>
+  if (exists("covariate_columns")) {
+    cov_df <- spatial_region |>
       sf::st_drop_geometry() |>
-      dplyr::select(dplyr::all_of(c(cov_cols, "area")))
+      dplyr::select(dplyr::all_of(c(covariate_columns, "area")))
 
-    X_mat <- cbind(1, as.matrix(cov_df[cov_cols]))
+    X_mat <- cbind(1, as.matrix(cov_df[covariate_columns]))
     eta   <- drop(X_mat %*% background_rate)
 
     bg_space_integral <- sum(exp(eta) * cov_df$area)
 
     background_term <- w * bg_space_integral
   } else{
-    background_term <- (x_max - x_min) * (y_max - y_min) * as.numeric(exp(X %*% background_rate) * w)
+    background_term <- spatial_area * as.numeric(exp(X %*% background_rate) * w)
   }
 
 
-  (x_max - x_min) * (y_max - y_min) * as.numeric(exp(X %*% background_rate) * w)
+  spatial_area * as.numeric(exp(X %*% background_rate) * w)
 
   # Integrate over entire spatial region and over waiting time
   triggering_term <-
     triggering_rate * {
-      (do.call(spatial_cdf, c(list(q = x_max - hawkes$x), spatial_params)) -
-        do.call(spatial_cdf, c(list(q = x_min - hawkes$x), spatial_params))) *
-      (do.call(spatial_cdf, c(list(q = y_max - hawkes$y), spatial_params)) -
-        do.call(spatial_cdf, c(list(q = y_min - hawkes$y), spatial_params))) *
+      # (do.call(spatial_cdf, c(list(q = x_max - hawkes$x), spatial_params)) -
+      #   do.call(spatial_cdf, c(list(q = x_min - hawkes$x), spatial_params))) *
+      # (do.call(spatial_cdf, c(list(q = y_max - hawkes$y), spatial_params)) -
+      #   do.call(spatial_cdf, c(list(q = y_min - hawkes$y), spatial_params))) *
       rowSums(do.call(temporal_cdf, c(list(q = time_diff), temporal_params)) -
         do.call(temporal_cdf, c(list(q = time_diff_lag), temporal_params)))
     }
