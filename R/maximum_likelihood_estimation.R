@@ -142,12 +142,17 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 
   # Estimation if a boundary is being used
   if (!is.null(boundary)) {
-    spatial_region <- spatial_region |>
+    spatial_region_boundary <- spatial_region |>
+      sf::st_union() |>
       sf::st_buffer(-boundary)
+
+    spatial_region <- spatial_region |>
+      sf::st_intersection(spatial_region_boundary) |>
+      suppressWarnings()
 
 
     # Find the index of values that fall within the boundary region S0
-    outside_S <- lengths(sf::st_within(hawkes, spatial_region_boundary)) <= 0
+    outside_S <- lengths(sf::st_within(hawkes, spatial_region)) <= 0
     # Set the rows of the events in S0 to 0 in the parent matrix
     parent_est_mat[outside_S,] <- 0
 
@@ -220,14 +225,14 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' @examples
 #' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
 #' hawkes_mle(hawkes, inits = params)
 #'
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
-#' hawkes_mle(hawkes, inits = params)
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes_mle(hawkes, inits = params, boundary = 1)
 hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
@@ -305,13 +310,12 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 #' @export
 #'
 #' @examples
-#' set.seed(123)
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
-#' hessian_est(hawkes, est)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+#' est <- hawkes_mle(hawkes, inits = params)
+#' hessian_est(hawkes, est$est)
 #'
 hessian_est <- function(hawkes, est) {
   est_vec <- .flatten_free_params(est)

@@ -35,11 +35,11 @@ est <- hawkes_mle(hawkes, inits = params)
 confint(est)
 
 
-#' data("example_background_covariates")
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-wald_int(hawkes, est)
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+est <- hawkes_mle(hawkes, inits = params)
+confint(est)
 }
 \seealso{
 \code{\link[=hessian_est]{hessian_est()}}, \code{\link[=confint]{confint()}}

@@ -275,7 +275,7 @@ log_likelihood <- function(hawkes, parameters) {
 
   .unpack_hawkes(hawkes)
 
-  background_rate <- parameters$background_rate
+  background_rate <- parameters$background_rate |> as.numeric()
   triggering_rate <- parameters$triggering_rate
   temporal_params <- parameters$temporal
   spatial_params <- parameters$spatial

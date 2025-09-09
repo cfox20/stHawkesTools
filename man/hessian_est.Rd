@@ -29,12 +29,11 @@ to obtain the covariance estimate. The names of the matrix rows and columns are 
 the flattened parameter vector.
 }
 \examples{
-set.seed(123)
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
-hessian_est(hawkes, est)
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+est <- hawkes_mle(hawkes, inits = params)
+hessian_est(hawkes, est$est)
 
 }

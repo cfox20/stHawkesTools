@@ -74,7 +74,7 @@ time_scaled_residuals <- function(hawkes, est) {
   w <- hawkes$t - dplyr::lag(hawkes$t, default = time_window[1])
 
   # Store integral of background rate
-  if (exists("covariate_columns")) {
+  if (exists("covariate_columns", inherits = FALSE)) {
     cov_df <- spatial_region |>
       sf::st_drop_geometry() |>
       dplyr::select(dplyr::all_of(c(covariate_columns, "area")))
