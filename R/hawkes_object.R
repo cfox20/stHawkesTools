@@ -189,6 +189,12 @@ as_hawkes <- function(data, time_window, spatial_region, spatial_family, tempora
   # if (class(data)[1] == "data.frame") {
   #
   # }
+  data <- data |>
+    dplyr::mutate(
+      x = sf::st_coordinates(data)[,1],
+      y = sf::st_coordinates(data)[,2],
+      .before = t
+    )
 
   hawkes(data = data, params = params,
          time_window = time_window, spatial_region = spatial_region,

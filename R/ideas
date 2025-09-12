@@ -1,9 +1,0 @@
-Things to add:
-
-- Documentation and vignette
-- Fix spatial burning with covariates
-- check setup of cov_map with covariates for simulation to be more generalized
-- Full support for flexible triggering parameters
-- Easier setup of sf object for covaraite map. Automatically match the covariates
-- Check for overlapping events
-
