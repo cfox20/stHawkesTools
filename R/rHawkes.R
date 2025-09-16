@@ -22,8 +22,8 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, crs = NA) {
 
 #' Simulate background events
 #'
-#' @param spatial_region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).
 #' @param background_rate A vector of coefficients for the background covariates.
+#' @param spatial_region An sf object defining the spatial region for simulation.
 #' @param covariate_columns A character vector of the names of the columns in spatial_region to be used as background covariates.
 #'
 #' @importFrom stats rnorm rpois rexp runif
@@ -113,14 +113,14 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 
 #' Generate a Hawkes Process
 #'
-#' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list.
+#' @param params A named list of lists containing the values for the background rate, triggering rate, spatial parameters in a named list, and temporal parameters in a named list. See example for exact specification.
 #' @param time_window A numeric vector of length 2 specifying the simulated time window.
-#' @param spatial_region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).
+#' @param spatial_region An sf object defining the spatial region for simulation.
 #' @param covariate_columns A character vector of the names of the columns in spatial_region to be used as background covariates.
-#' @param t_burnin Temporal burn-in for simulation. Defaults to 10 if not used.
-#' @param s_burnin Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.
-#' @param spatial_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
-#' @param temporal_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
+#' @param temporal_burnin Temporal burn-in for simulation. Defaults to 1/10 of the length of the time window if not used.
+#' @param spatial_burnin Spatial burn-in for simulation. Defaults to the area of spatial_region^.25.
+#' @param temporal_family A temporal triggering kernel function to generate data from. Defaults to "Exponential" if not used. Other options include "Power Law", "Uniform", and "Gamma".
+#' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to "Gaussian" if not used. Other options include "Uniform" and "Exponential"
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -138,7 +138,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 rHawkes <- function(params, time_window, spatial_region, covariate_columns = NULL,
                     temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
-                    spatial_family = "Gaussian", temporal_family = "Exponential") {
+                    temporal_family = "Exponential", spatial_family = "Gaussian") {
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
   hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family) |>

@@ -5,7 +5,9 @@
 #'
 #' @param data A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.
 #' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.
-#' @param region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.
+#' @param time_window A numeric vector of length 2 specifying the time window.
+#' @param spatial_region An sf object defining the spatial region and covariate regions.
+#' @param covariate_columns A character vector containing the names of covariates columns to be used for the model.
 #' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
 #' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
 #'
@@ -89,23 +91,23 @@ hawkes <- function(data = NULL, params = NULL,
   # Assign the appropriate sampling method for the specified spatial kernel function.
   if (!is.null(temporal_family) && class(temporal_family) == "character") {
     temporal_pdf <- switch (temporal_family,
+                            "Exponential" = stats::dexp,
                             "Gamma" = stats::dgamma,
                             "Uniform" = stats::dunif,
-                            "Exponential" = stats::dexp,
                             "Power Law" = dpower_law,
                             stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the temporal_family argument.")
     )
     temporal_cdf <- switch (temporal_family,
+                            "Exponential" = stats::pexp,
                             "Gamma" = stats::pgamma,
                             "Unifrom" = stats::punif,
-                            "Exponential" = stats::pexp,
                             "Power Law" = ppower_law,
                             stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the spatial_family argument.")
     )
     temporal_sampler <- switch (temporal_family,
+                                "Exponential" = stats::rexp,
                                 "Gamma" = stats::rgamma,
                                 "Uniform" = stats::runif,
-                                "Exponential" = stats::rexp,
                                 "Power Law" = rpower_law,
                                 stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the temporal_family argument.")
     )
@@ -162,18 +164,17 @@ hawkes <- function(data = NULL, params = NULL,
 
 #' Convert an Object to Type Hawkes
 #'
-#' @param data A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.
-#' @param region A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.
-#' @param spatial_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
-#' @param temporal_family A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.
-#' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.
+#' @param data A dataframe containing the event locations in the columns x, y, and t or an sf object containing the event locations in geometry and the event times in a column named t.
+#' @param time_window A numeric vector of length 2 specifying the time window.
+#' @param spatial_region An sf object defining the spatial region and covariate regions.
+#' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
+#' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
+#' @param covariate_columns A character vector containing the names of covariates columns to be used for the model. Defaults to NULL if not used
 #'
 #' @returns A hawkes object.
 #' @export
 #'
 #' @examples
-#' set.seed(123)
-#'
 #' df <- data.frame(
 #'   x = runif(100, 0, 10),
 #'   y = runif(100, 0, 10),
@@ -185,8 +186,16 @@ hawkes <- function(data = NULL, params = NULL,
 #' hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
 #' print(hawkes_df)
 #'
-as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL) {
+as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, covariate_columns = NULL) {
   if (class(data)[1] == "sf") {
+    data <- data |>
+      dplyr::mutate(
+        x = sf::st_coordinates(data)[,1],
+        y = sf::st_coordinates(data)[,2],
+        .before = t
+      )
+  } else{
+    data <- sf::st_as_sf(data, coords = c("x", "y"))
     data <- data |>
       dplyr::mutate(
         x = sf::st_coordinates(data)[,1],
@@ -195,7 +204,7 @@ as_hawkes <- function(data, time_window, spatial_region, spatial_family, tempora
       )
   }
 
-  hawkes(data = data, params = params,
+  hawkes(data = data,
          time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family,
          covariate_columns = covariate_columns)

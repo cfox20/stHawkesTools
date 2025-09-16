@@ -14,6 +14,8 @@ hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE)
 \item{boundary}{A boundary region to correct for the boundary bias. Defaults to NULL if not used.}
 
 \item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
+
+\item{verbose}{A logical to specify if parameter estimates should be printed at each iteration of the EM-algorithm.}
 }
 \value{
 A \code{hawkes_fit} object that is a list of lists containing the MLEs.
@@ -28,10 +30,6 @@ params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spat
 hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
 hawkes_mle(hawkes, inits = params)
 
-
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(shape = 2, scale = 1))
-hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region, temporal_family = "Power Law")
-hawkes_mle(hawkes, inits = params)
 
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")

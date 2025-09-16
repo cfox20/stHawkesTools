@@ -19,11 +19,15 @@ hawkes(
 
 \item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
 
+\item{time_window}{A numeric vector of length 2 specifying the time window.}
+
+\item{spatial_region}{An sf object defining the spatial region and covariate regions.}
+
 \item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
 
 \item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
+\item{covariate_columns}{A character vector containing the names of covariates columns to be used for the model.}
 }
 \value{
 A hawkes object containing a tibble with the events.

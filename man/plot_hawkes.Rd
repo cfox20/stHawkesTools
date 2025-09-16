@@ -9,9 +9,9 @@ plot_hawkes(hawkes, color = "time", ...)
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
 
-\item{color}{A character string. Either \code{"time"} to color by time, or \code{"background"} to color by whether an event is a background event (only works for simulated processes).}
+\item{color}{A string, either \code{"time"} to color by time, or \code{"background"} to color by whether an event is a background event (only works for simulated processes).}
 
-\item{...}{Additional arguments passed to \code{ggplot2::geom_point()}.}
+\item{...}{Additional arguments passed to \code{ggplot2::geom_sf(data = hawkes, ...)}. For full customization directly use ggplot() + geom_sf()}
 }
 \value{
 A \code{ggplot2} object.
@@ -20,9 +20,17 @@ A \code{ggplot2} object.
 Creates a scatterplot of points from a spatio-temporal Hawkes process, colored either by time or by whether they are background events.
 }
 \examples{
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1)
+
+plot_hawkes(hawkes, color = "time")
+
+
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")
 hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+
 plot_hawkes(hawkes, color = "time")
 }

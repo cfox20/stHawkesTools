@@ -11,26 +11,26 @@ rHawkes(
   covariate_columns = NULL,
   temporal_burnin = (time_window[2] - time_window[1])/(10),
   spatial_burnin = sum(as.numeric(sf::st_area(spatial_region)))^0.25,
-  spatial_family = "Gaussian",
-  temporal_family = "Exponential"
+  temporal_family = "Exponential",
+  spatial_family = "Gaussian"
 )
 }
 \arguments{
-\item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list.}
+\item{params}{A named list of lists containing the values for the background rate, triggering rate, spatial parameters in a named list, and temporal parameters in a named list. See example for exact specification.}
 
 \item{time_window}{A numeric vector of length 2 specifying the simulated time window.}
 
-\item{spatial_region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
+\item{spatial_region}{An sf object defining the spatial region for simulation.}
 
 \item{covariate_columns}{A character vector of the names of the columns in spatial_region to be used as background covariates.}
 
-\item{spatial_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+\item{temporal_burnin}{Temporal burn-in for simulation. Defaults to 1/10 of the length of the time window if not used.}
 
-\item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+\item{spatial_burnin}{Spatial burn-in for simulation. Defaults to the area of spatial_region^.25.}
 
-\item{t_burnin}{Temporal burn-in for simulation. Defaults to 10 if not used.}
+\item{temporal_family}{A temporal triggering kernel function to generate data from. Defaults to "Exponential" if not used. Other options include "Power Law", "Uniform", and "Gamma".}
 
-\item{s_burnin}{Spatial burn-in for simulation. Note that this may not work as expected with a background covariate map. Defaults to 0 if not used.}
+\item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to "Gaussian" if not used. Other options include "Uniform" and "Exponential"}
 }
 \value{
 A hawkes object with a generated Hawkes process.

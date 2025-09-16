@@ -20,7 +20,11 @@ est_params(
 
 \item{parent_est_mat}{A matrix produced from the parent_est_mat() function.}
 
-\item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
+\item{boundary}{A boundary region to correct for the boundary bias. Defaults to NULL if not used.}
+
+\item{fixed_spatial}{A character vector of the spatial parameters to fix in parameter estimation. Defaults to NULL if not used}
+
+\item{fixed_temporal}{A character vector of the temporal parameters to fix in parameter estimation. Defaults to NULL if not used}
 }
 \value{
 A named list of the form of parameters with udpated parameter estimates.
@@ -29,10 +33,10 @@ A named list of the form of parameters with udpated parameter estimates.
 Compute Parameter Estimate Updates
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 parent_est_mat <- parent_est(hawkes, params)
 est_params(hawkes, params, parent_est_mat)
 

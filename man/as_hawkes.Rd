@@ -10,20 +10,21 @@ as_hawkes(
   spatial_region,
   spatial_family,
   temporal_family,
-  params = NULL,
   covariate_columns = NULL
 )
 }
 \arguments{
-\item{data}{A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.}
+\item{data}{A dataframe containing the event locations in the columns x, y, and t or an sf object containing the event locations in geometry and the event times in a column named t.}
 
-\item{spatial_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named spatial_pdf, spatial_cdf, and spatial_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+\item{time_window}{A numeric vector of length 2 specifying the time window.}
 
-\item{temporal_family}{A spatial triggering kernel function to generate data from. Alternatively, a list can be provided to designate a custom kernel. The list must contain the objects named temporal_pdf, temporal_cdf, and temporal_sampler. They should follow the format of the dnorm, pnorm, and rnorm functions and the parameters must match the names. Defaults to NULL if not used.}
+\item{spatial_region}{An sf object defining the spatial region and covariate regions.}
 
-\item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
+\item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
 
-\item{region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)). Defaults to NULL if not used.}
+\item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
+
+\item{covariate_columns}{A character vector containing the names of covariates columns to be used for the model. Defaults to NULL if not used}
 }
 \value{
 A hawkes object.
@@ -32,8 +33,6 @@ A hawkes object.
 Convert an Object to Type Hawkes
 }
 \examples{
-set.seed(123)
-
 df <- data.frame(
   x = runif(100, 0, 10),
   y = runif(100, 0, 10),

@@ -7,18 +7,16 @@
 \method{confint}{hawkes_fit}(hawkes_fit, conf_level = 0.95)
 }
 \arguments{
-\item{hawkes_fit}{A \code{hawkes} object containing the observed point pattern and model setup.}
+\item{hawkes_fit}{A \code{hawkes_fit} object}
 
-\item{conf_level}{Confidence level for the interval, e.g., 0.95 for 95\% intervals. Default is 0.95.}
-
-\item{est}{A nested list of estimated parameters, typically the output from \code{hawkes_mle()}.}
+\item{conf_level}{Confidence level for the interval. Default is 0.95.}
 }
 \value{
 A data frame with the point estimates and corresponding lower and upper confidence bounds.
 The column names match the default format of \code{confint()}, e.g., \code{"2.5 \%"}, \code{"97.5 \%"}.
 }
 \description{
-Computes Wald-style confidence intervals for the parameters of a spatio-temporal Hawkes process
+Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
 using the estimated covariance matrix from the observed information (negative Hessian).
 }
 \details{

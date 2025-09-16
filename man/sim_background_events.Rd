@@ -14,7 +14,7 @@ sim_background_events(
 \arguments{
 \item{background_rate}{A vector of coefficients for the background covariates.}
 
-\item{spatial_region}{A list containing the spatial and temporal windows of the form list(x = c(xmin, xmax), y = c(ymin, ymax), t = c(tmin, tmax)).}
+\item{spatial_region}{An sf object defining the spatial region for simulation.}
 
 \item{covariate_columns}{A character vector of the names of the columns in spatial_region to be used as background covariates.}
 }

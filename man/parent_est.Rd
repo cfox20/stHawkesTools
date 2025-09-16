@@ -28,4 +28,6 @@ hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")
 hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+
+(parent_est_mat <- parent_est(hawkes, params))
 }

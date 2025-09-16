@@ -4,19 +4,21 @@
 \alias{plot_intensity}
 \title{Plot Conditional Intensity of Hawkes Process}
 \usage{
-plot_intensity(hawkes, est, time = NULL, coordinates = NULL, step = 0.1)
+plot_intensity(hawkes, est, stepsize, time = NULL, coordinates = NULL)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
 
 \item{est}{A list of fitted parameter values for the Hawkes process.}
 
+\item{stepsize}{A numeric value for the spatial resolution of the evaluation grid.}
+
 \item{time}{A numeric value giving the time at which to evaluate the conditional intensity.}
 
-\item{step}{A numeric value for the spatial resolution of the evaluation grid.}
+\item{coordinates}{A numeric vector of length 2 specifying the coordinates where to evalute the conditional intensity over time.}
 }
 \value{
-A \code{ggplot2} object showing the spatial intensity at the given time, with observed events overlaid.
+A list of \code{ggplot2} objects showing the spatial intensity and temporal intensity at a given time or location.
 }
 \description{
 Visualizes the conditional intensity function at a fixed time over a spatial grid, based on a fitted Hawkes model.

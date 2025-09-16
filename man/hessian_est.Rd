@@ -7,12 +7,9 @@
 hessian_est(hawkes, est)
 }
 \arguments{
-\item{hawkes}{An object containing the data and model specification for a Hawkes process,
-passed to the log-likelihood function.}
+\item{hawkes}{A hawkes object.}
 
-\item{est}{A list of estimated parameter values (typically the output of an EM or MLE routine),
-used as the starting point for computing the Hessian. Must match the structure expected by
-\code{.flatten_free_params()} and \code{.vector_input_log_likelihood()}.}
+\item{est}{A hawkes_fit object from the \code{hawkes_mle()} function.}
 }
 \value{
 A named covariance matrix corresponding to the estimated parameters.
@@ -31,8 +28,8 @@ the flattened parameter vector.
 \examples{
 spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 hessian_est(hawkes, est$est)
 

@@ -7,10 +7,10 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 #' conditional_intensity(hawkes, params)
 conditional_intensity <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -74,18 +74,24 @@ conditional_intensity <- function(hawkes, parameters) {
 #' @param hawkes A `hawkes` object.
 #' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
 #' @param time A time to evaluate the conditional intensity.
-#' @param step A numeric value specifying the size of the grid to evaluate the conditional intensity over.
+#' @param stepsize A numeric value specifying the size of the grid to evaluate the conditional intensity over.
 #'
 #' @returns A numeric vector
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, region)
-#' spatial_conditional_intensity(hawkes, params, 25)
-spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' spatial_conditional_intensity(hawkes, params, 25, .5)
+#'
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' data("example_background_covariates")
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#'
+#' spatial_conditional_intensity(hawkes, params, 25, .5)
+spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
@@ -96,13 +102,29 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
 
   .unpack_hawkes(hawkes)
 
+  if(!exists("covariate_columns", inherits = FALSE)){
+    covariate_columns <- NULL
+  }
+
   hawkes <- hawkes[hawkes$t < time,]
 
-  region$t[2] <- time
+  time_window[2] <- time
 
-  grid <- expand.grid(seq(region$x[1], region$x[2], step), seq(region$y[1], region$y[2], step))
-  x <- grid[,1]
-  y <- grid[,2]
+  point_grid <- spatial_region |>
+    sf::st_make_grid(what = "centers", cellsize = stepsize) |>
+    sf::st_as_sf() |>
+    sf::st_intersection(spatial_region) |>
+    suppressWarnings()
+
+  x <- sf::st_coordinates(point_grid)[,1]
+  y <- sf::st_coordinates(point_grid)[,2]
+
+  X <- point_grid |>
+    sf::st_drop_geometry() |>
+    dplyr::select(all_of(covariate_columns))
+
+  X <- cbind(1,X) |>
+    as.matrix()
 
   background_rate <- parameters$background_rate
   triggering_rate <- parameters$triggering_rate
@@ -112,12 +134,9 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
   background_rate <- as.numeric(background_rate)
 
   x_diff <- outer(x, hawkes$x, `-`)
-  # x_diff[upper.tri(x_diff)] <- 0
   y_diff <- outer(y, hawkes$y, `-`)
-  # y_diff[upper.tri(y_diff)] <- 0
 
   time_diff <- matrix(rep(outer(time, hawkes$t, `-`), nrow(x_diff)), nrow = nrow(x_diff), byrow = TRUE)
-  # time_diff[upper.tri(time_diff)] <- 0
 
   # Compute a matrix of the triggering intensities
   if (!spatial_is_separable) {
@@ -135,20 +154,6 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
   }
   # g_mat[upper.tri(g_mat, diag = TRUE)] <- 0
 
-
-  if (length(background_rate) == 1) {
-    X <- 1
-  } else{
-    X <- sf::st_as_sf(grid, coords = c("Var1", "Var2"), crs = sf::st_crs(spatial_region)) |>
-      sf::st_join(spatial_region, join = sf::st_intersects) |>
-      dplyr::mutate(.wkt = sf::st_as_text(geometry)) |>
-      dplyr::distinct(.wkt, .keep_all = TRUE) |>
-      dplyr::select(-.wkt) |>
-      sf::st_drop_geometry() |>
-      dplyr::select(all_of(covariate_columns)) |>
-      as.matrix()
-    X <- cbind(1, X)
-  }
 
   # Store the values of the complete likelihood at each point
   # exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
@@ -170,10 +175,10 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, step = .1) {
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 #' temporal_conditional_intensity(hawkes, params, c(5,5))
 temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -190,7 +195,7 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   y <- coordinates[2]
 
   t_points <- hawkes$t
-  t_grid <- c(t_points, seq(region$t[1], region$t[2], by = step)) |>
+  t_grid <- c(t_points, seq(time_window[1], time_window[2], by = step)) |>
     sort()
 
   background_rate <- parameters$background_rate
@@ -258,11 +263,6 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 #'
 #' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
 #' hawkes <- rHawkes(params, c(0,50), spatial_region)
-#' log_likelihood(hawkes, params)
-#'
-#' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
 #' log_likelihood(hawkes, params)
 log_likelihood <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")

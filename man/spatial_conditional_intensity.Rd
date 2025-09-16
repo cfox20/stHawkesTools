@@ -4,7 +4,7 @@
 \alias{spatial_conditional_intensity}
 \title{Compute the Conditional Intensity at a Specified Time t}
 \usage{
-spatial_conditional_intensity(hawkes, parameters, time, step = 0.1)
+spatial_conditional_intensity(hawkes, parameters, time, stepsize)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
@@ -13,7 +13,7 @@ spatial_conditional_intensity(hawkes, parameters, time, step = 0.1)
 
 \item{time}{A time to evaluate the conditional intensity.}
 
-\item{step}{A numeric value specifying the size of the grid to evaluate the conditional intensity over.}
+\item{stepsize}{A numeric value specifying the size of the grid to evaluate the conditional intensity over.}
 }
 \value{
 A numeric vector
@@ -22,9 +22,15 @@ A numeric vector
 Compute the Conditional Intensity at a Specified Time t
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = -4,triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-hawkes <- rHawkes(params, region)
-spatial_conditional_intensity(hawkes, params, 25)
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+spatial_conditional_intensity(hawkes, params, 25, .5)
+
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+
+spatial_conditional_intensity(hawkes, params, 25, .5)
 }

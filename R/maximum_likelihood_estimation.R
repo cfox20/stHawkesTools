@@ -18,6 +18,8 @@
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+#'
+#' (parent_est_mat <- parent_est(hawkes, params))
 parent_est <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
@@ -85,16 +87,18 @@ parent_est <- function(hawkes, parameters) {
 #' @param hawkes A `hawkes` object
 #' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").
 #' @param parent_est_mat A matrix produced from the parent_est_mat() function.
-#' @param boundary A boundary region to correct for the bpundary bias. Defaults to NULL if not used.
+#' @param boundary A boundary region to correct for the boundary bias. Defaults to NULL if not used.
+#' @param fixed_spatial A character vector of the spatial parameters to fix in parameter estimation. Defaults to NULL if not used
+#' @param fixed_temporal A character vector of the temporal parameters to fix in parameter estimation. Defaults to NULL if not used
 #'
 #' @returns A named list of the form of parameters with udpated parameter estimates.
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 #' parent_est_mat <- parent_est(hawkes, params)
 #' est_params(hawkes, params, parent_est_mat)
 #'
@@ -216,6 +220,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' @param inits A named list of lists containing the initial values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").
 #' @param boundary A boundary region to correct for the boundary bias. Defaults to NULL if not used.
 #' @param max_iters A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.
+#' @param verbose A logical to specify if parameter estimates should be printed at each iteration of the EM-algorithm.
 #'
 #' @returns A `hawkes_fit` object that is a list of lists containing the MLEs.
 #' @export
@@ -227,10 +232,6 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
 #' hawkes_mle(hawkes, inits = params)
 #'
-#'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(shape = 2, scale = 1))
-#' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region, temporal_family = "Power Law")
-#' hawkes_mle(hawkes, inits = params)
 #'
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
@@ -296,11 +297,8 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 #' and returns its inverse as an estimate of the covariance matrix for the MLE parameters
 #' in a spatio-temporal Hawkes process model.
 #'
-#' @param hawkes An object containing the data and model specification for a Hawkes process,
-#'   passed to the log-likelihood function.
-#' @param est A list of estimated parameter values (typically the output of an EM or MLE routine),
-#'   used as the starting point for computing the Hessian. Must match the structure expected by
-#'   `.flatten_free_params()` and `.vector_input_log_likelihood()`.
+#' @param hawkes A hawkes object.
+#' @param est A hawkes_fit object from the `hawkes_mle()` function.
 #'
 #' @return A named covariance matrix corresponding to the estimated parameters.
 #'
@@ -315,8 +313,8 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 #' @examples
 #' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' hessian_est(hawkes, est$est)
 #'
@@ -335,12 +333,11 @@ hessian_est <- function(hawkes, est) {
 
 #' Wald Confidence Intervals for Hawkes Model Parameters
 #'
-#' Computes Wald-style confidence intervals for the parameters of a spatio-temporal Hawkes process
+#' Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
 #' using the estimated covariance matrix from the observed information (negative Hessian).
 #'
-#' @param hawkes_fit A `hawkes` object containing the observed point pattern and model setup.
-#' @param est A nested list of estimated parameters, typically the output from `hawkes_mle()`.
-#' @param conf_level Confidence level for the interval, e.g., 0.95 for 95% intervals. Default is 0.95.
+#' @param hawkes_fit A `hawkes_fit` object
+#' @param conf_level Confidence level for the interval. Default is 0.95.
 #'
 #' @return A data frame with the point estimates and corresponding lower and upper confidence bounds.
 #' The column names match the default format of `confint()`, e.g., `"2.5 %"`, `"97.5 %"`.
