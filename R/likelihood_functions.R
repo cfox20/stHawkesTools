@@ -297,13 +297,13 @@ log_likelihood <- function(hawkes, parameters) {
       dplyr::select(dplyr::all_of(covariate_columns)) |>
       as.matrix()
     covariate_map <- cbind(1, covariate_map)
-    area <- spatial_region$area
+    area <- spatial_region$area |> as.numeric()
 
     background_rates <- area * exp(covariate_map %*% background_rate)
     background_integral <- time_length * sum(background_rates)
   } else {
     # No covariates — scalar background
-    background_integral <- time_length * sf::st_area(spatial_region) * exp(background_rate)
+    background_integral <- time_length * as.numeric(sf::st_area(spatial_region)) * exp(background_rate)
   }
 
 

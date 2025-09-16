@@ -103,6 +103,6 @@ time_scaled_residuals <- function(hawkes, est) {
         do.call(temporal_cdf, c(list(q = time_diff_lag), temporal_params)))
     }
 
-  background_term + triggering_term
+  as.numeric(background_term) + triggering_term
 }
 

@@ -137,7 +137,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' data("example_background_covariates")
 #' rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 rHawkes <- function(params, time_window, spatial_region, covariate_columns = NULL,
-                    temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region))^.25,
+                    temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
                     spatial_family = "Gaussian", temporal_family = "Exponential") {
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
   hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
@@ -228,7 +228,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
           dplyr::select(all_of(c(names(data), covariate_columns, "area")))
       }
 
-      data <- as_hawkes(data, params = params, time_window = time_window, spatial_region = spatial_region,
+      data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,
                         spatial_family = spatial_family, temporal_family = temporal_family,
                         covariate_columns = covariate_columns)
 
@@ -273,8 +273,8 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
     O <- O |>
       dplyr::relocate(t, id, .before = parent) |>
       dplyr::mutate(
-        x = sf::st_coordinates(O)[,"X"],
-        y = sf::st_coordinates(O)[,"Y"],
+        x = sf::st_coordinates(O)[,1],
+        y = sf::st_coordinates(O)[,2],
         .before = t)
 
 
@@ -295,7 +295,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
           dplyr::select(all_of(c(names(data), covariate_columns, "area")))
       }
 
-      data <- as_hawkes(data, params = params, time_window = time_window, spatial_region = spatial_region,
+      data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,
                         spatial_family = spatial_family, temporal_family = temporal_family,
                         covariate_columns = covariate_columns)
 

@@ -106,11 +106,6 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 
   .unpack_hawkes(hawkes)
 
-  if (is.null(parameters)) {
-    message("True parameters stored in Hawkes object are being used for parent estimation. If estimated parameters are desired, pass the estimates to the parameters argument.")
-    parameters <- params
-  }
-
   if(!exists("covariate_columns", inherits = FALSE)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
@@ -186,22 +181,25 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
   # )
 
 
-  if (spatial_family == "Gaussian" && temporal_family == "Exponential") {
+  if (spatial_family == "Gaussian") {
     # triggering_rate_update <- sum(parent_est_mat) / (sum(1 - exp(-temporal_params$rate * (t_max - hawkes$t))))
-
-    temporal_param_updates <- list(rate = sum(parent_est_mat) / (sum(parent_est_mat * time_diff) + triggering_rate_update * sum((time_window[2] - hawkes$t)*exp(-temporal_params$rate * (time_window[2] - hawkes$t)))))
 
     spatial_param_updates <- list(mean = 0, sd = sqrt(sum(parent_est_mat * (x_diff^2 + y_diff^2)) / (2 * sum(parent_est_mat))))
 
   } else {
-  # Numerically solve for MLE for general kernels
-    temporal_param_updates <- .optim_named(.temporal_parameter_likelihood, parameters, "temporal",
-                                           fixed = fixed_temporal, hawkes = hawkes, time_diff = time_diff, parent_est_mat = parent_est_mat)
+    # Numerically solve for MLE for general kernels
 
     spatial_param_updates <- .optim_named(.spatial_parameter_likelihood, parameters, "spatial", fixed = fixed_spatial, hawkes = hawkes,
                                           parent_est_mat = parent_est_mat, x_diff = x_diff, y_diff = y_diff)
   }
 
+  if (temporal_family == "Exponential") {
+    temporal_param_updates <- list(rate = sum(parent_est_mat) / (sum(parent_est_mat * time_diff) + triggering_rate_update * sum((time_window[2] - hawkes$t)*exp(-temporal_params$rate * (time_window[2] - hawkes$t)))))
+  } else{
+    # stop("The shape and scale are going negative for power law")
+    temporal_param_updates <- .optim_named(.temporal_parameter_likelihood, parameters, "temporal",
+                                           fixed = fixed_temporal, hawkes = hawkes, time_diff = time_diff, parent_est_mat = parent_est_mat, triggering_rate = triggering_rate_update)
+  }
 
   list(background_rate = background_rate_update,
        triggering_rate = triggering_rate_update,
@@ -216,7 +214,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'
 #' @param hawkes A `hawkes` object
 #' @param inits A named list of lists containing the initial values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").
-#' @param boundary A boundary region to correct for the bpundary bias. Defaults to NULL if not used.
+#' @param boundary A boundary region to correct for the boundary bias. Defaults to NULL if not used.
 #' @param max_iters A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.
 #'
 #' @returns A `hawkes_fit` object that is a list of lists containing the MLEs.
@@ -227,6 +225,11 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'
 #' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
 #' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+#' hawkes_mle(hawkes, inits = params)
+#'
+#'
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(shape = 2, scale = 1))
+#' hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region, temporal_family = "Power Law")
 #' hawkes_mle(hawkes, inits = params)
 #'
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
@@ -384,12 +387,10 @@ confint.hawkes_fit <- function(hawkes_fit, conf_level = 0.95) {
   lower_name <- paste0(formatC(100 * alpha / 2, format = "f", digits = 1), " %")
   upper_name <- paste0(formatC(100 * (1 - alpha / 2), format = "f", digits = 1), " %")
 
-  data.frame(
+  tibble::tibble(
     Variable = names(est_vec),
     Estimate = est_vec,
-    setNames(list(est_vec - z * sqrt(diag(cov_est))), lower_name),
-    setNames(list(est_vec + z * sqrt(diag(cov_est))), upper_name),
-    check.names = FALSE,
-    row.names = NULL
+    Lower = est_vec - z * sqrt(diag(cov_est)),
+    Upper = est_vec + z * sqrt(diag(cov_est))
   )
 }

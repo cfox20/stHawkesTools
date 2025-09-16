@@ -18,11 +18,10 @@ A \code{hawkes} object.
 Resample Data by EM-ALgorithm Clustering
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
-
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 parent_mat <- parent_est(hawkes, est)
 sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
 

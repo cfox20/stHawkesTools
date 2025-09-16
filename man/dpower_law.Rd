@@ -18,4 +18,5 @@ Density function for power law (Lomax)
 }
 \examples{
 dpower_law(1, shape = 2, scale = 1)
+dpower_law(matrix(c(1:48, NA), nrow = 7), shape = 2, scale = 1)
 }

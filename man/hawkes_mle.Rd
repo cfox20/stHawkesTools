@@ -11,7 +11,7 @@ hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE)
 
 \item{inits}{A named list of lists containing the initial values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").}
 
-\item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
+\item{boundary}{A boundary region to correct for the boundary bias. Defaults to NULL if not used.}
 
 \item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
 }
@@ -26,6 +26,11 @@ spatial_region <- create_rectangular_sf(0,10,0,10)
 
 params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
 hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+hawkes_mle(hawkes, inits = params)
+
+
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(shape = 2, scale = 1))
+hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region, temporal_family = "Power Law")
 hawkes_mle(hawkes, inits = params)
 
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))

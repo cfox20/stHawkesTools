@@ -139,12 +139,12 @@ hawkes <- function(data = NULL, params = NULL,
   structure(
     # data[,c(covariate_columns)],
     data |> dplyr::arrange(t),
-    params = params,
     time_window = time_window,
     spatial_region = spatial_region,
+    # params = params,
+    covariate_columns = covariate_columns,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
-    covariate_columns = covariate_columns,
     spatial_sampler = spatial_sampler,
     spatial_pdf = spatial_pdf,
     spatial_cdf = spatial_cdf,
@@ -186,15 +186,14 @@ hawkes <- function(data = NULL, params = NULL,
 #' print(hawkes_df)
 #'
 as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, params = NULL, covariate_columns = NULL) {
-  # if (class(data)[1] == "data.frame") {
-  #
-  # }
-  data <- data |>
-    dplyr::mutate(
-      x = sf::st_coordinates(data)[,1],
-      y = sf::st_coordinates(data)[,2],
-      .before = t
-    )
+  if (class(data)[1] == "sf") {
+    data <- data |>
+      dplyr::mutate(
+        x = sf::st_coordinates(data)[,1],
+        y = sf::st_coordinates(data)[,2],
+        .before = t
+      )
+  }
 
   hawkes(data = data, params = params,
          time_window = time_window, spatial_region = spatial_region,
@@ -216,7 +215,7 @@ print.hawkes <- function(x, n = 10, ...) {
   cat("<hawkes object>\n\n")
   cat("Number of events:", nrow(x), "\n\n")
 
-  spatial_region <- attr(x, "region")
+  spatial_region <- attr(x, "spatial_region")
   time_window <- attr(x, "time_window")
   cat("Spatial Region:\n")
   print(spatial_region)

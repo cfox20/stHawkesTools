@@ -7,11 +7,10 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
-#'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' data("example_background_covariates")
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #' parent_mat <- parent_est(hawkes, est)
 #' sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
 #'
@@ -22,17 +21,16 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
 
   .unpack_hawkes(hawkes)
 
-  if (!exists("cov_map", inherits = FALSE)) {
-    cov_map <- NULL
+  if(!exists("covariate_columns", inherits = FALSE)){
+    X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
+  } else {
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
+      as.matrix()
   }
 
-  if (!exists("X", inherits = FALSE)) {
-    X <- NULL
-  }
-
-  if (is.null(boundary)) {
-    boundary <- c(0,0)
-  }
+  # if (is.null(boundary)) {
+  #   boundary <- c(0,0)
+  # }
 
   # Find which event is the parent of every event
   # parent_id <- parent_mat |> max.col()
@@ -62,18 +60,18 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
                   t = t - dplyr::first(t)) |>
     dplyr::ungroup()
 
-  if (!is.null(cov_map)) {
-    sampled_clusters <- hawkes |>
+  # if (!is.null(cov_map)) {
+  sampled_clusters <- hawkes |>
       dplyr::rename(cluster = parent_est) |>
       dplyr::group_by(cluster) |>
       dplyr::slice(1) |>
       dplyr::select(x, y, cluster) |>
       sf::st_as_sf(coords = c("x", "y"), crs = NA) |>
-      sf::st_join(cov_map) |>
+      sf::st_join(spatial_region) |>
       dplyr::select(cluster, geoid) |>
       sf::st_drop_geometry() |>
       dplyr::sample_n(size = rpois(1, dplyr::n()), replace = TRUE) |>
-      dplyr::left_join(cov_map |> dplyr::select(geoid, geometry), by = "geoid") |>
+      dplyr::left_join(spatial_region |> dplyr::select(geoid, geometry), by = "geoid") |>
       sf::st_as_sf() |>
       dplyr::rowwise() |>
       dplyr::mutate(
@@ -81,27 +79,12 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
       ) |>
       dplyr::ungroup()
 
-    sampled_clusters <- sampled_clusters |>
+  sampled_clusters <- sampled_clusters |>
       sf::st_drop_geometry() |>
       dplyr::select(cluster) |>
       cbind(sf::st_coordinates(sampled_clusters)) |>
       dplyr::rename(x_shift = X, y_shift = Y) |>
-      dplyr::mutate(t_shift = runif(length(cluster), region$t[1], region$t[2]))
-
-  } else{
-    clusters <- new_hawkes$cluster |>
-      unique()
-
-    n <- rpois(1, length(clusters))
-    cluster <- sample(clusters, size = n, replace = TRUE)
-
-    sampled_clusters <- data.frame(
-      cluster = cluster,
-      x_shift = runif(n, region$x[1] - boundary[1], region$x[2] - boundary[1]),
-      y_shift = runif(n, region$y[1] - boundary[1], region$y[2] - boundary[1]),
-      t_shift = runif(n, region$t[1], region$t[2] - boundary[2])
-    )
-  }
+      dplyr::mutate(t_shift = runif(length(cluster), time_window[1], time_window[2]))
 
   new_hawkes <- new_hawkes |>
     dplyr::inner_join(sampled_clusters, by = "cluster", relationship = "many-to-many") |>
@@ -109,61 +92,51 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
            y = y + y_shift,
            t = t + t_shift) |>
     dplyr::arrange(t) |>
-    dplyr::filter(t <= region$t[2]) |>
-    dplyr::select(-x_shift, -y_shift, -t_shift)
+    dplyr::filter(t <= time_window[2]) |>
+    dplyr::select(-x_shift, -y_shift, -t_shift) |>
+    sf::st_drop_geometry() |>
+    sf::st_as_sf(coords = c("x", "y"), remove = FALSE) |>
+    sf::st_set_crs(sf::st_crs(spatial_region)) |>
+    dplyr::select(!all_of(c(covariate_columns))) |>
+    sf::st_intersection(spatial_region) |>
+    suppressWarnings()
 
-  new_hawkes <- new_hawkes[(new_hawkes$t > region$t[1]) & (new_hawkes$x > region$x[1]) & (new_hawkes$x < region$x[2]) & (new_hawkes$y > region$y[1]) & (new_hawkes$y < region$y[2]),]
-
-  if (!is.null(cov_map)) {
-    X <- new_hawkes |>
-      dplyr::select(colnames(X)) |>
-      as.matrix()
-  }
-
-  as_hawkes(new_hawkes, region, spatial_family =
-            spatial_family, temporal_family = temporal_family,
-            cov_map = cov_map, X = X)
+  as_hawkes(new_hawkes, time_window, spatial_region,
+            spatial_family = spatial_family, temporal_family = temporal_family,
+            covariate_columns = covariate_columns)
 }
 
 
 #' Block Bootstrap for Confidence Intervals of Hawkes MLEs
 #'
 #' @param hawkes A `hawkes` object
-#' @param block_length_t A numeric value to set the length of blocks to wrap the process.
+#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
+#' @param B number of bootstrap iterations
+#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
+#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
+#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
+#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
 #'
 #' @returns A `hawkes` object.
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,100))
-#'
-#' params <- list(background_rate = list(intercept = -5.5),triggering_rate = 0.85,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' (est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3)))
-#'
-#' cluster_bootstrap(hawkes, est, B = 5, alpha = .05, parallel = FALSE, boundary = c(.5,3))
-#'
-#'
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
 #' future::plan(future::multisession, workers = future::availableCores())
 #'
-#' cluster_bootstrap(hawkes, est, B = 500, alpha = .05, parallel = TRUE, boundary = c(.5,3)))
+#' cluster_bootstrap(hawkes, est, B = 2, alpha = .05, parallel = TRUE, boundary = c(.5,3))
 #'
 #' future::plan(future::sequential)
-cluster_bootstrap <- function(hawkes, est, B, alpha, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+cluster_bootstrap <- function(hawkes, est, B, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 
   .unpack_hawkes(hawkes)
-
-  if (!exists("cov_map", inherits = FALSE)) {
-    cov_map <- NULL
-  }
 
   # Estimate parent matrix using the original estimate
   parent_mat <- parent_est(hawkes, est)

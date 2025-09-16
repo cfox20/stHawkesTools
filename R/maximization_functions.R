@@ -42,15 +42,16 @@
 #'
 #' @returns The negative log-likelihood contribution of the temporal triggering parameters.
 #' @keywords internal
-.temporal_parameter_likelihood <- function(p, hawkes, parent_est_mat, time_diff) {
+.temporal_parameter_likelihood <- function(p, hawkes, parent_est_mat, time_diff, triggering_rate) {
   .unpack_hawkes(hawkes)
-  triggering_rate <- params$triggering_rate
 
-  -{sum(parent_est_mat *
+  tryCatch(-{sum(parent_est_mat *
           .safe_log(do.call(temporal_pdf, c(list(x = time_diff), p)))) -
       triggering_rate *
-      sum(do.call(temporal_cdf, c(list(q = region$t[2] - hawkes$t), p)))
-  }
+      sum(do.call(temporal_cdf, c(list(q = time_window[2] - hawkes$t), p)))},
+    error = function(e){
+      stop(paste("Error in temporal parameter optimization:", e$message, "\n Last parameter values: ", p, "\n"))
+    })
 }
 
 

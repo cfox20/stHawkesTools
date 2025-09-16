@@ -10,7 +10,7 @@ rHawkes(
   spatial_region,
   covariate_columns = NULL,
   temporal_burnin = (time_window[2] - time_window[1])/(10),
-  spatial_burnin = sum(sf::st_area(spatial_region))^0.25,
+  spatial_burnin = sum(as.numeric(sf::st_area(spatial_region)))^0.25,
   spatial_family = "Gaussian",
   temporal_family = "Exponential"
 )

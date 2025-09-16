@@ -12,8 +12,8 @@ parametric_bootstrap(
   parallel = FALSE,
   max_iters = 500,
   boundary = NULL,
-  t_burnin = 10,
-  s_burnin = 0
+  temporal_burnin = NULL,
+  spatial_burnin = NULL
 )
 }
 \arguments{
@@ -31,11 +31,11 @@ parametric_bootstrap(
 
 \item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
 
+\item{seed}{A numeric to set seed for simulation. Defaults to NULL if not used. Note that a seed is recommended when using \code{parallel = TRUE}.}
+
 \item{t_burnin}{A numeric value to set the temporal burn-in region for simulation}
 
 \item{s_burnin}{A numeric value to set the spatial burn-in region for simulation}
-
-\item{seed}{A numeric to set seed for simulation. Defaults to NULL if not used. Note that a seed is recommended when using \code{parallel = TRUE}.}
 }
 \value{
 A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
@@ -44,11 +44,11 @@ A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
 Parametric bootstrap for confidence intervals of Hawkes MLEs
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 5))
 parametric_bootstrap(hawkes, est, B = 5, boundary = c(.5,3))
 
 

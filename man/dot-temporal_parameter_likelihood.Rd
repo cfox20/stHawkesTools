@@ -4,7 +4,13 @@
 \alias{.temporal_parameter_likelihood}
 \title{Temporal triggering kernel parameter likelihood}
 \usage{
-.temporal_parameter_likelihood(p, hawkes, parent_est_mat, time_diff)
+.temporal_parameter_likelihood(
+  p,
+  hawkes,
+  parent_est_mat,
+  time_diff,
+  triggering_rate
+)
 }
 \arguments{
 \item{p}{A named list of parameters for the temporal kernel.}

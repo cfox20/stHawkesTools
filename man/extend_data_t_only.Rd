@@ -18,10 +18,9 @@ A \code{hawkes} object.
 Wrap data for block sampling
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
-
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+data("example_background_covariates")
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 extend_data_t_only(hawkes, 5)
 
 }
