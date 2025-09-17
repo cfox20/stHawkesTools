@@ -13,6 +13,9 @@ dpower_law(x, shape = 2, scale = 1)
 
 \item{scale}{scale parameter for the Lomax distribution}
 }
+\value{
+a numeric vector of densities
+}
 \description{
 Density function for power law (Lomax)
 }

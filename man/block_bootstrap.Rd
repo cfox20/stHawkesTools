@@ -2,7 +2,7 @@
 % Please edit documentation in R/block_bootstrap.R
 \name{block_bootstrap}
 \alias{block_bootstrap}
-\title{Block Bootstrap for COnfidence Intervals of Hawkes MLEs}
+\title{Block Bootstrap for Confidence Intervals of Hawkes MLEs}
 \usage{
 block_bootstrap(
   hawkes,
@@ -12,21 +12,31 @@ block_bootstrap(
   alpha = 0.05,
   parallel = FALSE,
   max_iters = 500,
-  boundary = NULL,
-  t_burnin = 10,
-  s_burnin = 0
+  boundary = NULL
 )
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
 
-\item{block_length_t}{A numeric value to set the length of blocks to wrap the process.}
+\item{est}{A \code{hawkes_est} object containing the parameter estimates of \code{hawkes}}
+
+\item{B}{number of bootstrap iterations}
+
+\item{num_blocks}{number of blocs to sample for each bootstap iteration.}
+
+\item{alpha}{type-1 error rate for constructing confidence intervals. Defaults to .05 if unused}
+
+\item{parallel}{a logical specifying if parallel computation should be used. Parallel computation is implemented with the \code{furrr} package.}
+
+\item{max_iters}{maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.}
+
+\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused}
 }
 \value{
 A \code{hawkes} object.
 }
 \description{
-Block Bootstrap for COnfidence Intervals of Hawkes MLEs
+Block Bootstrap for Confidence Intervals of Hawkes MLEs
 }
 \examples{
 params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
@@ -34,9 +44,6 @@ data("example_background_covariates")
 hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
-future::plan(future::multisession, workers = future::availableCores())
+block_bootstrap(hawkes, est, B = 2, num_blocks = 25, alpha = .05, parallel = FALSE, boundary = 1)
 
-block_bootstrap(hawkes, est, B = 2, num_blocks = 25, alpha = .05, parallel = FALSE, boundary = c(.5,3))
-
-future::plan(future::sequential)
 }

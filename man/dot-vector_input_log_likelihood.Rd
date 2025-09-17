@@ -13,6 +13,9 @@
 
 \item{param_template}{a template to reconstruct the parameter object}
 }
+\value{
+A numeric of the log_likelihood
+}
 \description{
 Wrapper for likelihood for numerical optimization
 }

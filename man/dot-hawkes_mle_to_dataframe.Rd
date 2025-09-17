@@ -7,7 +7,7 @@
 .hawkes_mle_to_dataframe(est)
 }
 \arguments{
-\item{est}{A list of fitted parameter values from a Hawkes model, typically returned by \code{hawkes_mle()}. Must include components like \code{background_rate}, \code{triggering_rate}, \code{spatial}, and \code{temporal}.}
+\item{est}{A hawkes_fit object of fitted parameter values from a Hawkes model, typically returned by \code{hawkes_mle()}.}
 }
 \value{
 A data frame

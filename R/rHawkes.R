@@ -23,6 +23,7 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, crs = NA) {
 #' Simulate background events
 #'
 #' @param background_rate A vector of coefficients for the background covariates.
+#' @param time_window A numeric vector of length 2 specifying the simulated time window.
 #' @param spatial_region An sf object defining the spatial region for simulation.
 #' @param covariate_columns A character vector of the names of the columns in spatial_region to be used as background covariates.
 #'

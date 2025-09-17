@@ -71,12 +71,12 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' plot_intensity(hawkes, est, stepsize = .25, coordinates = c(5,5))
 #' plot_intensity(hawkes, est, stepsize = .25, coordinates = c(5,5), time = 40)
 #'
+#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -3.5, X1 = 1, X2 = .75, X3 = .5),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 1), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
+#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 #' plot_hawkes(hawkes)
-#' plot_intensity(hawkes, est, time = 40, coordinates = c(4.5, 5))
+#' plot_intensity(hawkes, est, stepsize = .1, time = 40, coordinates = c(4.5, 5))
 plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL) {
   plots <- list()
 

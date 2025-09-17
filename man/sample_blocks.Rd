@@ -9,7 +9,7 @@ sample_blocks(hawkes, num_blocks)
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
 
-\item{block_length_t}{A numeric value to set the length of blocks to wrap the process.}
+\item{num_blocks}{A numeric value to set the number of blocks to be used for resampling.}
 }
 \value{
 A \code{hawkes} object.

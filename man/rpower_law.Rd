@@ -20,5 +20,5 @@ a numeric vector of values of the Lomax distribution
 Sample events with power law distance in time
 }
 \examples{
-rexp_spatial(5, shape = 2, scale = 1)
+rpower_law(5, shape = 2, scale = 1)
 }

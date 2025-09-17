@@ -127,7 +127,7 @@
 #'
 #' Converts a fitted Hawkes parameter list into a tidy data frame with one row per parameter.
 #'
-#' @param est A list of fitted parameter values from a Hawkes model, typically returned by `hawkes_mle()`. Must include components like `background_rate`, `triggering_rate`, `spatial`, and `temporal`.
+#' @param est A hawkes_fit object of fitted parameter values from a Hawkes model, typically returned by `hawkes_mle()`.
 #'
 #' @returns A data frame
 #'
@@ -160,7 +160,7 @@
 #' @param hawkes a hawkes object
 #' @param param_template a template to reconstruct the parameter object
 #'
-#' @returns
+#' @returns A numeric of the log_likelihood
 #' @export
 #'
 #' @keywords internal

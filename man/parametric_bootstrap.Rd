@@ -31,11 +31,9 @@ parametric_bootstrap(
 
 \item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
 
-\item{seed}{A numeric to set seed for simulation. Defaults to NULL if not used. Note that a seed is recommended when using \code{parallel = TRUE}.}
+\item{temporal_burnin}{A numeric value to set the temporal burn-in region for simulation.}
 
-\item{t_burnin}{A numeric value to set the temporal burn-in region for simulation}
-
-\item{s_burnin}{A numeric value to set the spatial burn-in region for simulation}
+\item{spatial_burnin}{A numeric value to set the spatial burn-in region for simulation.}
 }
 \value{
 A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
@@ -49,17 +47,18 @@ data("example_background_covariates")
 hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
+# B is set to 5 to demonstrate the use without requiring significant computation. We recommend at least B=1000
 parametric_bootstrap(hawkes, est, B = 5, boundary = c(.5,3))
 
 
+params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 data("example_background_covariates")
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
 future::plan(future::multisession, workers = future::availableCores())
 
-parametric_bootstrap(hawkes, est, B = 500, parallel = TRUE, boundary = c(.5,3))
+parametric_bootstrap(hawkes, est, B = 5, parallel = TRUE, boundary = c(.5,3))
 
 future::plan(future::sequential)
 }

@@ -1,0 +1,27 @@
+---
+title: "Getting Started with stHawkesTools"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with stHawkesTools}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(stHawkesTools)
+```
+
+```{r}
+spatial_region <- create_rectangular_sf(0,10,0,10)
+
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1)
+```
+

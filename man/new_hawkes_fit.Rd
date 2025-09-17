@@ -10,8 +10,6 @@ new_hawkes_fit(hawkes, est)
 \item{hawkes}{The original hawkes object used to fit the model}
 
 \item{est}{A named nested list of estimated parameters, e.g. from \code{hawkes_mle()}}
-
-\item{residual_fn}{Function to compute residuals (default = \code{compute_residuals})}
 }
 \value{
 An object of class \code{hawkes_fit}

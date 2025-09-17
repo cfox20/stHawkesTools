@@ -25,15 +25,14 @@ rexp_spatial <- function(n, rate) {
 
 #' Density of events with exponential(rate) distance in random direction from the origin
 #'
-#' @param x numeric vector of x coordinates
-#' @param y numeric vector of y coordinates
+#' @param x a nx2 matrix of coordinates
 #' @param rate rate parameter of the exponential distribution
 #'
 #' @returns numeric vector of densities at each (x, y) point
 #' @export
 #'
 #' @examples
-#' dexp_spatial(c(1, 0), c(0, 1), rate = 2)
+#' dexp_spatial(matrix(c(1, 0, 0, 1), ncol = 2), rate = 2)
 dexp_spatial <- function(x, rate) {
   if (is.null(rate)) {
     stop("rate must be specified")
@@ -47,15 +46,14 @@ dexp_spatial <- function(x, rate) {
 
 #' CDF of events with exponential(rate) distance in random direction from the origin
 #'
-#' @param x numeric vector of x coordinates
-#' @param y numeric vector of y coordinates
+#' @param q a nx2 matrix of coordinates
 #' @param rate rate parameter of the exponential distribution
 #'
 #' @returns numeric vector of cumulative probabilities at each (x, y) point
 #' @export
 #'
 #' @examples
-#' pexp_spatial(c(1, 0), c(0, 1), rate = 2)
+#' pexp_spatial(matrix(c(1, 0, 0, 1), ncol = 2), rate = 2)
 pexp_spatial <- function(q, rate) {
   if (is.null(rate)) {
     stop("rate must be specified")
@@ -74,7 +72,7 @@ pexp_spatial <- function(q, rate) {
 #' @param shape shape parameter for the Lomax distribution
 #' @param scale scale parameter for the Lomax distribution
 #'
-#' @returns
+#' @returns a numeric vector of densities
 #' @export
 #'
 #' @examples
@@ -121,7 +119,7 @@ ppower_law <- function(q, shape = 2, scale = 1, lower.tail = TRUE) {
 #' @export
 #'
 #' @examples
-#' rexp_spatial(5, shape = 2, scale = 1)
+#' rpower_law(5, shape = 2, scale = 1)
 rpower_law <- function(n, shape = 2, scale = 1) {
   if (is.null(shape) | is.null(scale)) {
     stop("params must include 'shape' and 'scale' for the power law kernel")

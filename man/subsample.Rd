@@ -12,15 +12,25 @@ subsample(
   alpha,
   parallel = FALSE,
   max_iters = 500,
-  boundary = NULL,
-  t_burnin = 10,
-  s_burnin = 0
+  boundary = NULL
 )
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
 
+\item{est}{A \code{hawkes_est} object containing the parameter estimates of \code{hawkes}}
+
+\item{B}{number of bootstrap iterations}
+
 \item{length}{A numeric value to set the length of the subsample}
+
+\item{alpha}{type-1 error rate for constructing confidence intervals. Defaults to .05 if unused}
+
+\item{parallel}{a logical specifying if parallel computation should be used. Parallel computation is implemented with the \code{furrr} package.}
+
+\item{max_iters}{maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.}
+
+\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused}
 }
 \value{
 A \code{hawkes} object.
@@ -29,21 +39,10 @@ A \code{hawkes} object.
 Block Bootstrap for COnfidence Intervals of Hawkes MLEs
 }
 \examples{
-region <- list(x = c(0,10), y = c(0,10), t = c(0,150))
+spatial_region <- create_rectangular_sf(0,10,0,10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-hawkes <- rHawkes(params, region)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+est <- hawkes_mle(hawkes, inits = params)
 subsample(hawkes, est, 5, 25, alpha = 0.05)
-
-data("example_background_covariates")
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-
-future::plan(future::multisession, workers = future::availableCores())
-
-subsample(hawkes, est, B = 5, length = 20, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
-
-future::plan(future::sequential)
 }

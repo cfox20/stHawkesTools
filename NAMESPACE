@@ -3,6 +3,7 @@
 S3method(confint,hawkes_fit)
 S3method(print,hawkes)
 S3method(print,hawkes_fit)
+S3method(summary,hawkes_fit)
 export(.vector_input_log_likelihood)
 export(as_hawkes)
 export(block_bootstrap)

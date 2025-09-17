@@ -1,7 +1,8 @@
 #' Resample Data by EM-ALgorithm Clustering
 #'
-#' @param hawkes A `hawkes` object
-#' @param parent_mat An estimate of the parent matrix produced by `parent_est`
+#' @param hawkes A `hawkes` object.
+#' @param parent_mat An estimate of the parent matrix produced by `parent_est`.
+#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused.
 #'
 #' @returns A `hawkes` object.
 #' @export

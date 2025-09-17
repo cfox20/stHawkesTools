@@ -7,9 +7,11 @@
 sample_clusters(hawkes, parent_mat, boundary = NULL)
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{parent_mat}{An estimate of the parent matrix produced by \code{parent_est}}
+\item{parent_mat}{An estimate of the parent matrix produced by \code{parent_est}.}
+
+\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused.}
 }
 \value{
 A \code{hawkes} object.

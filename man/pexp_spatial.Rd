@@ -7,11 +7,9 @@
 pexp_spatial(q, rate)
 }
 \arguments{
+\item{q}{a nx2 matrix of coordinates}
+
 \item{rate}{rate parameter of the exponential distribution}
-
-\item{x}{numeric vector of x coordinates}
-
-\item{y}{numeric vector of y coordinates}
 }
 \value{
 numeric vector of cumulative probabilities at each (x, y) point
@@ -20,5 +18,5 @@ numeric vector of cumulative probabilities at each (x, y) point
 CDF of events with exponential(rate) distance in random direction from the origin
 }
 \examples{
-pexp_spatial(c(1, 0), c(0, 1), rate = 2)
+pexp_spatial(matrix(c(1, 0, 0, 1), ncol = 2), rate = 2)
 }

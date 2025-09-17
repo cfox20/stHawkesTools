@@ -7,11 +7,9 @@
 dexp_spatial(x, rate)
 }
 \arguments{
-\item{x}{numeric vector of x coordinates}
+\item{x}{a nx2 matrix of coordinates}
 
 \item{rate}{rate parameter of the exponential distribution}
-
-\item{y}{numeric vector of y coordinates}
 }
 \value{
 numeric vector of densities at each (x, y) point
@@ -20,5 +18,5 @@ numeric vector of densities at each (x, y) point
 Density of events with exponential(rate) distance in random direction from the origin
 }
 \examples{
-dexp_spatial(c(1, 0), c(0, 1), rate = 2)
+dexp_spatial(matrix(c(1, 0, 0, 1), ncol = 2), rate = 2)
 }

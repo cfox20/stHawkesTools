@@ -17,7 +17,7 @@ extend_data_t_only <- function(hawkes, block_length_t) {
   time_window <- attr(hawkes, "time_window")
   t_length <- time_window[2] - time_window[1]
 
-  covariate_columns <- attr(hawkes, "covariate_columns")
+  .unpack_hawkes(hawkes)
 
   # create dataframes to extend points to hand block wrapping
   first_block <- transform(hawkes[hawkes$t <= block_length_t,], t = t + t_length)
@@ -26,15 +26,19 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 
   time_window[2] <- time_window[2] + block_length_t
 
-  attr(new_hawkes, "time_window") <- time_window
-  new_hawkes
+  as_hawkes(data = new_hawkes,
+            time_window = time_window,
+            spatial_region = spatial_region,
+            spatial_family = spatial_family,
+            temporal_family = temporal_family,
+            covariate_columns = covariate_columns)
 }
 
 
 #' Resample data with moving blocls
 #'
 #' @param hawkes A `hawkes` object
-#' @param block_length_t A numeric value to set the length of blocks to wrap the process.
+#' @param num_blocks A numeric value to set the number of blocks to be used for resampling.
 #'
 #' @returns A `hawkes` object.
 #' @export
@@ -66,13 +70,24 @@ sample_blocks <- function(hawkes, num_blocks) {
     new_hawkes <- rbind(new_hawkes, block)
   }
 
-  as_hawkes(new_hawkes, time_window, spatial_region, spatial_family, temporal_family, covariate_columns = covariate_columns)
+  as_hawkes(data = new_hawkes,
+            time_window = time_window,
+            spatial_region = spatial_region,
+            spatial_family = spatial_family,
+            temporal_family = temporal_family,
+            covariate_columns = covariate_columns)
 }
 
-#' Block Bootstrap for COnfidence Intervals of Hawkes MLEs
+#' Block Bootstrap for Confidence Intervals of Hawkes MLEs
 #'
 #' @param hawkes A `hawkes` object
-#' @param block_length_t A numeric value to set the length of blocks to wrap the process.
+#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
+#' @param B number of bootstrap iterations
+#' @param num_blocks number of blocs to sample for each bootstap iteration.
+#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
+#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
+#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
+#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
 #'
 #' @returns A `hawkes` object.
 #' @export
@@ -83,12 +98,9 @@ sample_blocks <- function(hawkes, num_blocks) {
 #' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
-#' future::plan(future::multisession, workers = future::availableCores())
+#' block_bootstrap(hawkes, est, B = 2, num_blocks = 25, alpha = .05, parallel = FALSE, boundary = 1)
 #'
-#' block_bootstrap(hawkes, est, B = 2, num_blocks = 25, alpha = .05, parallel = FALSE, boundary = c(.5,3))
-#'
-#' future::plan(future::sequential)
-block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)

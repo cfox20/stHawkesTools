@@ -16,7 +16,10 @@ Imports:
     nleqslv,
     purrr,
     sf,
-    tibble
+    tibble,
+    numDeriv
+Suggests: knitr, rmarkdown
+VignetteBuilder: knitr
 Depends: 
     R (>= 2.10)
 LazyData: true

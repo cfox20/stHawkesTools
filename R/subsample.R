@@ -7,10 +7,11 @@
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,50))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' est <- hawkes_mle(hawkes, inits = params)
 #' sample_subregion(hawkes, 25)
 #'
 sample_subregion <- function(hawkes, length) {
@@ -20,60 +21,56 @@ sample_subregion <- function(hawkes, length) {
 
   .unpack_hawkes(hawkes)
 
-  sub_samp_t <- runif(1, region$t[1], region$t[2] - length)
+  sub_samp_t <- runif(1, time_window[1], time_window[2] - length)
 
-  region$t <- c(sub_samp_t, sub_samp_t + length)
+  time_window <- c(sub_samp_t, sub_samp_t + length)
 
-  sample_points <- ((hawkes$t >= region$t[1]) & (hawkes$t <= region$t[2]))
+  sample_points <- ((hawkes$t >= time_window[1]) & (hawkes$t <= time_window[2]))
   new_hawkes <- hawkes[sample_points,]
   new_hawkes$t <- new_hawkes$t - sub_samp_t
 
-  region$t <- c(0, length)
+  time_window <- c(0, length)
 
-  attr(new_hawkes, "region") <- region
-
-  if (exists("X", inherits = FALSE)) {
-    attr(new_hawkes, "X") <- X[sample_points,]
-  }
-
-  new_hawkes
+  new_hawkes |>
+    as_hawkes(time_window = time_window,
+              spatial_region = spatial_region,
+              spatial_family = spatial_family,
+              temporal_family = temporal_family)
 }
 
 #' Block Bootstrap for COnfidence Intervals of Hawkes MLEs
 #'
 #' @param hawkes A `hawkes` object
+#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
+#' @param B number of bootstrap iterations
 #' @param length A numeric value to set the length of the subsample
+#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
+#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
+#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
+#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
 #'
 #' @returns A `hawkes` object.
 #' @export
 #'
 #' @examples
-#' region <- list(x = c(0,10), y = c(0,10), t = c(0,150))
+#' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.1),temporal = list(rate = 2), fixed = list(spatial = "mean", temporal = NULL))
-#' hawkes <- rHawkes(params, region)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
+#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
+#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' est <- hawkes_mle(hawkes, inits = params)
 #' subsample(hawkes, est, 5, 25, alpha = 0.05)
-#'
-#' data("example_background_covariates")
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1, X3 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2), fixed = list(spatial = "mean"))
-#' hawkes <- rHawkes(params, region, spatial_family = "Gaussian", temporal_family = "Exponential", cov_map = example_background_covariates)
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-#'
-#' future::plan(future::multisession, workers = future::availableCores())
-#'
-#' subsample(hawkes, est, B = 5, length = 20, alpha = .05, parallel = TRUE, seed = 123, boundary = c(.5,3))
-#'
-#' future::plan(future::sequential)
-subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL, t_burnin = 10, s_burnin = 0) {
+subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 
   .unpack_hawkes(hawkes)
 
-  if (!exists("cov_map", inherits = FALSE)) {
-    cov_map <- NULL
+  if(!exists("covariate_columns", inherits = FALSE)){
+    X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
+  } else {
+    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
+      as.matrix()
   }
 
   if (parallel) {
