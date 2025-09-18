@@ -233,6 +233,9 @@ summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption(
 }
 
 #' @rdname summary.hawkes_fit
+#' @param x A `summary.hawkes_fit` object produced by `summary.hawkes_fit()`.
+#' @param ... Further arguments passed to or from other methods.
+#' @return For `print.summary.hawkes_fit()`, returns `x` (invisibly).
 #' @export
 print.summary.hawkes_fit <- function(x, digits = x$digits, ...) {
   if (!is.null(x$n) && is.finite(x$n)) {

@@ -2,7 +2,7 @@
 % Please edit documentation in R/cluster_bootstrap.R
 \name{cluster_bootstrap}
 \alias{cluster_bootstrap}
-\title{Block Bootstrap for Confidence Intervals of Hawkes MLEs}
+\title{Block Bootstrap Confidence Intervals for Hawkes MLEs}
 \usage{
 cluster_bootstrap(
   hawkes,
@@ -15,30 +15,42 @@ cluster_bootstrap(
 )
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{est}{A \code{hawkes_est} object containing the parameter estimates of \code{hawkes}}
+\item{est}{A \code{hawkes_est} object with parameter estimates for \code{hawkes}.}
 
-\item{B}{number of bootstrap iterations}
+\item{B}{Number of bootstrap iterations.}
 
-\item{alpha}{type-1 error rate for constructing confidence intervals. Defaults to .05 if unused}
+\item{alpha}{Type I error rate for the interval. Defaults to 0.05.}
 
-\item{parallel}{a logical specifying if parallel computation should be used. Parallel computation is implemented with the \code{furrr} package.}
+\item{parallel}{Logical flag for \code{furrr} based parallel computation.}
 
-\item{max_iters}{maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.}
+\item{max_iters}{Maximum EM iterations per fit. Defaults to 500.}
 
-\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused}
+\item{boundary}{Optional boundary width used for edge correction.}
 }
 \value{
-A \code{hawkes} object.
+A tibble of bootstrap estimates.
 }
 \description{
-Block Bootstrap for Confidence Intervals of Hawkes MLEs
+Block Bootstrap Confidence Intervals for Hawkes MLEs
 }
 \examples{
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
 future::plan(future::multisession, workers = future::availableCores())

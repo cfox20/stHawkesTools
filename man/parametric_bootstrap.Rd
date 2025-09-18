@@ -2,7 +2,7 @@
 % Please edit documentation in R/parametric_bootstrap.R
 \name{parametric_bootstrap}
 \alias{parametric_bootstrap}
-\title{Parametric bootstrap for confidence intervals of Hawkes MLEs}
+\title{Parametric bootstrap for Hawkes MLE confidence intervals}
 \usage{
 parametric_bootstrap(
   hawkes,
@@ -17,48 +17,73 @@ parametric_bootstrap(
 )
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{est}{A \code{hawkes_mle} object to estimate the parameters for the \code{hawkes} object passed to the function.}
+\item{est}{A \code{hawkes_mle} object providing initial parameter estimates.}
 
-\item{B}{The number of bootstrap iterations. At least 1000 iterations are recommended, but computation time can be quite long.}
+\item{B}{Number of bootstrap iterations. At least 1000 is recommended.}
 
-\item{alpha}{Specified alpha value. Defaults to 0.05 if not used.}
+\item{alpha}{Significance level for confidence intervals. Defaults to 0.05.}
 
-\item{parallel}{Logical to specify use of parallel computation via the \pkg{furrr} package. Setup multisession before calling function. See package for details.}
+\item{parallel}{Logical flag for \pkg{furrr} based parallel computation. Configure a
+multisession plan before calling when \code{TRUE}.}
 
-\item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
+\item{max_iters}{Maximum EM iterations for each refit. Defaults to 500.}
 
-\item{boundary}{A boundary region to correct for the bpundary bias. Defaults to NULL if not used.}
+\item{boundary}{Optional boundary width used for edge correction.}
 
-\item{temporal_burnin}{A numeric value to set the temporal burn-in region for simulation.}
+\item{temporal_burnin}{Temporal burn-in used when simulating bootstrap samples.}
 
-\item{spatial_burnin}{A numeric value to set the spatial burn-in region for simulation.}
+\item{spatial_burnin}{Spatial burn-in radius used when simulating bootstrap samples.}
 }
 \value{
-A \code{hawkes_fit} object that is a list of lists contatiing the MLEs.
+A tibble of bootstrap summary statistics.
 }
 \description{
-Parametric bootstrap for confidence intervals of Hawkes MLEs
+Parametric bootstrap for Hawkes MLE confidence intervals
 }
 \examples{
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
-# B is set to 5 to demonstrate the use without requiring significant computation. We recommend at least B=1000
-parametric_bootstrap(hawkes, est, B = 5, boundary = c(.5,3))
+# Demonstration with few bootstrap iterations (use at least 1000 in practice)
+parametric_bootstrap(hawkes, est, B = 5, boundary = c(0.5, 3))
 
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
 future::plan(future::multisession, workers = future::availableCores())
 
-parametric_bootstrap(hawkes, est, B = 2, parallel = TRUE, boundary = c(.5,3))
+parametric_bootstrap(hawkes, est, B = 2, parallel = TRUE, boundary = c(0.5, 3))
 
 future::plan(future::sequential)
 }

@@ -172,7 +172,7 @@ point estimates alongside Wald standard errors and confidence intervals derived
 from the observed information matrix.
 
 ```{r estimation-summary}
-# summary(est)
+summary(est)
 ```
 
 A tidy data frame of confidence intervals is also available via `confint()`:

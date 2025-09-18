@@ -2,37 +2,70 @@
 % Please edit documentation in R/residuals.R
 \name{time_scaled_residuals}
 \alias{time_scaled_residuals}
-\title{Compute Time Scaled Residuals}
+\title{Compute time-scaled residuals}
 \usage{
 time_scaled_residuals(hawkes, est)
 }
 \arguments{
-\item{hawkes}{a \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{est}{a \code{hawkes_mle} object produced from \code{hawkes_mle()}.}
+\item{est}{A \code{hawkes_mle} object produced by \code{hawkes_mle()}.}
 }
 \value{
 A numeric vector of transformed waiting times.
 }
 \description{
-Compute Time Scaled Residuals
+Compute time-scaled residuals
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.1),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 100), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 residuals <- time_scaled_residuals(hawkes, est)
 
-curve(dexp(x, rate = 1), from = 0, to = 10, lwd = 2, xlab = "Residual", ylab = "Density", main = "Residual vs Exponential(1)")
+curve(
+  dexp(x, rate = 1),
+  from = 0,
+  to = 10,
+  lwd = 2,
+  xlab = "Residual",
+  ylab = "Density",
+  main = "Residual vs Exponential(1)"
+)
 lines(density(residuals, from = 0), col = "red")
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
-curve(dexp(x, rate = 1), from = 0, to = 10, lwd = 2, xlab = "Residual", ylab = "Density", main = "Residual vs Exponential(1)")
+curve(
+  dexp(x, rate = 1),
+  from = 0,
+  to = 10,
+  lwd = 2,
+  xlab = "Residual",
+  ylab = "Density",
+  main = "Residual vs Exponential(1)"
+)
 lines(density(residuals, from = 0), col = "red")
 }

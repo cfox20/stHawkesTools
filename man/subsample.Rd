@@ -2,7 +2,7 @@
 % Please edit documentation in R/subsample.R
 \name{subsample}
 \alias{subsample}
-\title{Block Bootstrap for COnfidence Intervals of Hawkes MLEs}
+\title{Block bootstrap for Hawkes MLEs via subsampling}
 \usage{
 subsample(
   hawkes,
@@ -16,33 +16,38 @@ subsample(
 )
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{est}{A \code{hawkes_est} object containing the parameter estimates of \code{hawkes}}
+\item{est}{A \code{hawkes_est} object containing parameter estimates.}
 
-\item{B}{number of bootstrap iterations}
+\item{B}{Number of bootstrap iterations.}
 
-\item{length}{A numeric value to set the length of the subsample}
+\item{length}{Length of each temporal subsample.}
 
-\item{alpha}{type-1 error rate for constructing confidence intervals. Defaults to .05 if unused}
+\item{alpha}{Type I error rate for confidence intervals. Defaults to 0.05.}
 
-\item{parallel}{a logical specifying if parallel computation should be used. Parallel computation is implemented with the \code{furrr} package.}
+\item{parallel}{Logical flag for \code{furrr} based parallel computation.}
 
-\item{max_iters}{maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.}
+\item{max_iters}{Maximum EM iterations per fit. Defaults to 500.}
 
-\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused}
+\item{boundary}{Optional boundary width used for edge correction.}
 }
 \value{
-A \code{hawkes} object.
+A tibble of bootstrap estimates.
 }
 \description{
-Block Bootstrap for COnfidence Intervals of Hawkes MLEs
+Block bootstrap for Hawkes MLEs via subsampling
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 subsample(hawkes, est, 5, 25, alpha = 0.05)
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/maximization_functions.R
 \name{.spatial_parameter_likelihood}
 \alias{.spatial_parameter_likelihood}
-\title{Spatial triggering kernel parameter likelihood}
+\title{Spatial kernel likelihood contribution}
 \usage{
 .spatial_parameter_likelihood(p, hawkes, parent_est_mat, x_diff, y_diff)
 }
@@ -18,9 +18,10 @@
 \item{y_diff}{A matrix of pairwise y-coordinate differences.}
 }
 \value{
-The negative log-likelihood contribution of the spatial triggering parameters.
+The negative log-likelihood contribution of the spatial parameters.
 }
 \description{
-Computes the (negative) expected complete-data log-likelihood for spatial triggering kernel parameters, assuming separable spatial kernels.
+Evaluates the negative expected complete-data log-likelihood for separable spatial
+triggering kernels.
 }
 \keyword{internal}

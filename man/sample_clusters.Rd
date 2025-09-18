@@ -2,27 +2,39 @@
 % Please edit documentation in R/cluster_bootstrap.R
 \name{sample_clusters}
 \alias{sample_clusters}
-\title{Resample Data by EM-ALgorithm Clustering}
+\title{Resample Data by EM Algorithm Clusters}
 \usage{
 sample_clusters(hawkes, parent_mat, boundary = NULL)
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object.}
+\item{hawkes}{A \code{hawkes} object to resample.}
 
-\item{parent_mat}{An estimate of the parent matrix produced by \code{parent_est}.}
+\item{parent_mat}{Parent probabilities estimated with \code{parent_est()}.}
 
-\item{boundary}{size of boundary to use for border correction. Defaults to NULL if unused.}
+\item{boundary}{Optional boundary width used for edge correction.}
 }
 \value{
-A \code{hawkes} object.
+A resampled \code{hawkes} object.
 }
 \description{
-Resample Data by EM-ALgorithm Clustering
+Resample Data by EM Algorithm Clusters
 }
 \examples{
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 parent_mat <- parent_est(hawkes, est)
 sample_clusters(hawkes, parent_mat, boundary = c(.5,3))

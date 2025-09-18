@@ -2,7 +2,7 @@
 % Please edit documentation in R/maximum_likelihood_estimation.R
 \name{est_params}
 \alias{est_params}
-\title{Compute Parameter Estimate Updates}
+\title{Compute parameter estimate updates}
 \usage{
 est_params(
   hawkes,
@@ -14,29 +14,37 @@ est_params(
 )
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{parameters}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").}
+\item{parameters}{Named list containing background, triggering, spatial, and temporal
+parameters. To fix kernel parameters, include a \code{fixed} list such as
+\code{fixed$spatial = c("mean")}.}
 
-\item{parent_est_mat}{A matrix produced from the parent_est_mat() function.}
+\item{parent_est_mat}{Matrix returned by \code{parent_est()}.}
 
-\item{boundary}{A boundary region to correct for the boundary bias. Defaults to NULL if not used.}
+\item{boundary}{Optional boundary width used to correct edge bias.}
 
-\item{fixed_spatial}{A character vector of the spatial parameters to fix in parameter estimation. Defaults to NULL if not used}
+\item{fixed_spatial}{Optional character vector naming spatial parameters to hold fixed.}
 
-\item{fixed_temporal}{A character vector of the temporal parameters to fix in parameter estimation. Defaults to NULL if not used}
+\item{fixed_temporal}{Optional character vector naming temporal parameters to hold
+fixed.}
 }
 \value{
-A named list of the form of parameters with udpated parameter estimates.
+A named list mirroring \code{parameters} with updated estimates.
 }
 \description{
-Compute Parameter Estimate Updates
+Compute parameter estimate updates
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 parent_est_mat <- parent_est(hawkes, params)
 est_params(hawkes, params, parent_est_mat)
 

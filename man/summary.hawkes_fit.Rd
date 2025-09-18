@@ -3,7 +3,7 @@
 \name{summary.hawkes_fit}
 \alias{summary.hawkes_fit}
 \alias{print.summary.hawkes_fit}
-\title{Summarize a hawkes fit object}
+\title{Print hawkes fit object}
 \usage{
 \method{summary}{hawkes_fit}(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...)
 
@@ -12,19 +12,20 @@
 \arguments{
 \item{object}{a hawkes fit object to be summarized.}
 
-\item{level}{confidence level used when constructing confidence intervals.}
+\item{level}{Confidence level used for interval estimates. Default is 0.95.}
 
-\item{digits}{minimum number of significant digits to display.}
+\item{digits}{Minimum number of significant digits to print.}
 
-\item{...}{further arguments passed to or from other methods.}
+\item{...}{Further arguments passed to or from other methods.}
 
-\item{x}{an object of class \code{summary.hawkes_fit}.}
+\item{x}{A \code{summary.hawkes_fit} object produced by \code{summary.hawkes_fit()}.}
 }
 \value{
-An object of class \code{summary.hawkes_fit} containing the coefficient table, residual
-summary, and the confidence level used.
+An object of class \code{summary.hawkes_fit} containing the coefficient table,
+residual summary, and the confidence level used.
+
+For \code{print.summary.hawkes_fit()}, returns \code{x} (invisibly).
 }
 \description{
-Summarizes a fitted Hawkes model by reporting parameter estimates with Wald confidence
-intervals and basic residual diagnostics.
+Print hawkes fit object
 }

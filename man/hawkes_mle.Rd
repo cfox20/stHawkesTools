@@ -2,37 +2,56 @@
 % Please edit documentation in R/maximum_likelihood_estimation.R
 \name{hawkes_mle}
 \alias{hawkes_mle}
-\title{Function to Estimate MLEs}
+\title{Function to estimate MLEs}
 \usage{
 hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE)
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{inits}{A named list of lists containing the initial values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function. If some parameters in the kernel function should be fixed in estimation, pass their names as another named list within params as fixed$spatial = c("mean").}
+\item{inits}{Named list of initial background, triggering, spatial, and temporal
+parameters. To fix parameters, include a \code{fixed} list such as
+\code{fixed$spatial = c("mean")}.}
 
-\item{boundary}{A boundary region to correct for the boundary bias. Defaults to NULL if not used.}
+\item{boundary}{Optional boundary width used for edge correction.}
 
-\item{max_iters}{A numeric value for the maximum number of iteration in the EM-algorithm. Defaults to 500 if not used.}
+\item{max_iters}{Maximum number of EM iterations. Defaults to 500.}
 
-\item{verbose}{A logical to specify if parameter estimates should be printed at each iteration of the EM-algorithm.}
+\item{verbose}{Logical flag to print parameter updates during fitting.}
 }
 \value{
-A \code{hawkes_fit} object that is a list of lists containing the MLEs.
+A \code{hawkes_fit} object containing the MLEs.
 }
 \description{
-Function to Estimate MLEs
+Function to estimate MLEs
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = .1),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,100), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.1),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 100), spatial_region = spatial_region)
 hawkes_mle(hawkes, inits = params)
 
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 hawkes_mle(hawkes, inits = params, boundary = 1)
 }

@@ -7,20 +7,26 @@
 conditional_intensity(hawkes, parameters)
 }
 \arguments{
-\item{hawkes}{A hawkes object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{parameters}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.}
+\item{parameters}{Named list containing background, triggering, spatial, and temporal
+parameters. Values usually represent current estimates.}
 }
 \value{
-A numeric vector
+A numeric vector.
 }
 \description{
 Compute Conditional Intensity at Each Event
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 conditional_intensity(hawkes, params)
 }

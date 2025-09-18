@@ -2,25 +2,37 @@
 % Please edit documentation in R/block_bootstrap.R
 \name{sample_blocks}
 \alias{sample_blocks}
-\title{Resample data with moving blocls}
+\title{Resample data with moving blocks}
 \usage{
 sample_blocks(hawkes, num_blocks)
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{num_blocks}{A numeric value to set the number of blocks to be used for resampling.}
+\item{num_blocks}{Number of blocks used for resampling.}
 }
 \value{
 A \code{hawkes} object.
 }
 \description{
-Resample data with moving blocls
+Resample data with moving blocks
 }
 \examples{
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 
 sample_blocks(hawkes, 25)
 

@@ -12,13 +12,14 @@ sim_background_events(
 )
 }
 \arguments{
-\item{background_rate}{A vector of coefficients for the background covariates.}
+\item{background_rate}{Vector of coefficients for the background covariates.}
 
-\item{time_window}{A numeric vector of length 2 specifying the simulated time window.}
+\item{time_window}{Numeric vector of length two giving the simulated time window.}
 
-\item{spatial_region}{An sf object defining the spatial region for simulation.}
+\item{spatial_region}{\code{sf} object defining the simulation region.}
 
-\item{covariate_columns}{A character vector of the names of the columns in spatial_region to be used as background covariates.}
+\item{covariate_columns}{Optional character vector naming background covariates in
+\code{spatial_region}.}
 }
 \value{
 A dataframe with generated background events.
@@ -27,8 +28,8 @@ A dataframe with generated background events.
 Simulate background events
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
-time_window <- c(0,50)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
+time_window <- c(0, 50)
 background_rate <- -4
 
 sim_background_events(background_rate, time_window, spatial_region)

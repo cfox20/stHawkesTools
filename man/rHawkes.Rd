@@ -2,7 +2,7 @@
 % Please edit documentation in R/rHawkes.R
 \name{rHawkes}
 \alias{rHawkes}
-\title{Generate a Hawkes Process}
+\title{Generate a Hawkes process}
 \usage{
 rHawkes(
   params,
@@ -16,35 +16,61 @@ rHawkes(
 )
 }
 \arguments{
-\item{params}{A named list of lists containing the values for the background rate, triggering rate, spatial parameters in a named list, and temporal parameters in a named list. See example for exact specification.}
+\item{params}{Named list containing background, triggering, spatial, and temporal
+parameters. See the examples for the expected structure.}
 
-\item{time_window}{A numeric vector of length 2 specifying the simulated time window.}
+\item{time_window}{Numeric vector of length two specifying the simulated window.}
 
-\item{spatial_region}{An sf object defining the spatial region for simulation.}
+\item{spatial_region}{\code{sf} object defining the spatial region.}
 
-\item{covariate_columns}{A character vector of the names of the columns in spatial_region to be used as background covariates.}
+\item{covariate_columns}{Optional character vector naming background covariates.}
 
-\item{temporal_burnin}{Temporal burn-in for simulation. Defaults to 1/10 of the length of the time window if not used.}
+\item{temporal_burnin}{Temporal burn-in duration. Defaults to one tenth of the window
+length.}
 
-\item{spatial_burnin}{Spatial burn-in for simulation. Defaults to the area of spatial_region^.25.}
+\item{spatial_burnin}{Spatial burn-in radius. Defaults to \code{area(spatial_region)^0.25}.}
 
-\item{temporal_family}{A temporal triggering kernel function to generate data from. Defaults to "Exponential" if not used. Other options include "Power Law", "Uniform", and "Gamma".}
+\item{temporal_family}{Temporal triggering kernel. Defaults to "Exponential". Other
+options include "Power Law", "Uniform", and "Gamma".}
 
-\item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to "Gaussian" if not used. Other options include "Uniform" and "Exponential"}
+\item{spatial_family}{Spatial triggering kernel. Defaults to "Gaussian". Other options
+include "Uniform" and "Exponential".}
 }
 \value{
 A hawkes object with a generated Hawkes process.
 }
 \description{
-Generate a Hawkes Process
+Generate a Hawkes process
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-(hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1))
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+(hawkes <- rHawkes(
+  params,
+  time_window = c(0, 50),
+  spatial_region = spatial_region,
+  spatial_burnin = 1
+))
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 }

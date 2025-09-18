@@ -2,25 +2,31 @@
 % Please edit documentation in R/likelihood_functions.R
 \name{log_likelihood}
 \alias{log_likelihood}
-\title{Compute Log-Likelihood}
+\title{Compute log-likelihood}
 \usage{
 log_likelihood(hawkes, parameters)
 }
 \arguments{
-\item{hawkes}{A hawkes object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{parameters}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.}
+\item{parameters}{Named list containing background, triggering, spatial, and temporal
+parameters.}
 }
 \value{
 A numeric vector.
 }
 \description{
-Compute Log-Likelihood
+Compute log-likelihood
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-hawkes <- rHawkes(params, c(0,50), spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.5),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, c(0, 50), spatial_region)
 log_likelihood(hawkes, params)
 }
