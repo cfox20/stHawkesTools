@@ -53,21 +53,37 @@ rectangular window by supplying the minimum and maximum `x` and `y`
 coordinates.
 
 ```{r region}
+x_centers <- seq(0.5, 9.5, length.out = 10)
+y_centers <- seq(0.5, 9.5, length.out = 10)
+
+center_covariate <- exp(-(((rep(x_centers, times = 10) - 5)^2 +
+                            (rep(y_centers, each = 10) - 5)^2) / 4))
+center_covariate <- (center_covariate - min(center_covariate)) /
+  (max(center_covariate) - min(center_covariate))
+
 spatial_region <- create_rectangular_sf(
   xmin = 0, xmax = 10,
-  ymin = 0, ymax = 10
+  ymin = 0, ymax = 10,
+  covariates = data.frame(center = center_covariate),
+  n_grid = c(10, 10)
 )
 
 spatial_region
 ```
 
-The object prints as an `sf` data frame; we can also plot the geometry to see
-the observation window.
+The object prints as an `sf` data frame.  The `center` column contains a
+covariate that peaks in the middle of the region.  We can visualise both the
+observation window and this covariate surface using base `sf` plotting tools.
 
-```{r region-plot, fig.width=5, fig.height=5}
+```{r region-plot, fig.width=10, fig.height=5}
+par(mfrow = c(1, 2), mar = c(2.5, 2.5, 2, 1))
 plot(sf::st_geometry(spatial_region),
      col = "grey95", border = "grey40",
      main = "Spatial observation window")
+plot(spatial_region["center"],
+     main = "Center-focused covariate",
+     pal = sf::sf.colors)
+par(mfrow = c(1, 1))
 ```
 
 ## Specifying model parameters
@@ -76,12 +92,12 @@ A Hawkes model combines a log-linear background rate (for exogenous events) with
 self-excitation governed by the triggering kernel.  Parameters are supplied as a
 named list with entries for the background rate, triggering rate, and the
 parameters of the spatial and temporal kernels.  The background rate list can
-include regression coefficients if spatial covariates are present; in this
-example we use only an intercept term.
+include regression coefficients if spatial covariates are present; here we use
+an intercept and the coefficient for the `center` covariate constructed above.
 
 ```{r parameters}
 true_params <- list(
-  background_rate = list(intercept = -3.8),
+  background_rate = list(intercept = -6.5, center = 3),
   triggering_rate = 0.6,
   spatial   = list(mean = 0, sd = 0.45),
   temporal  = list(rate = 1.5)
@@ -90,8 +106,10 @@ true_params
 ```
 
 The intercept corresponds to a baseline log-intensity of roughly
-\(\exp(-3.8) \approx 0.022\) events per unit area per unit time, while the
-triggering rate controls how many offspring each event tends to generate.
+\(\exp(-6.5) \approx 0.0015\) events per unit area per unit time.  Adding three
+times the `center` covariate increases this intensity towards the middle of the
+region, while the triggering rate controls how many offspring each event tends
+to generate.
 
 ## Simulating a spatio-temporal Hawkes process
 
@@ -103,6 +121,7 @@ hawkes <- rHawkes(
   params = true_params,
   time_window = c(0, 40),
   spatial_region = spatial_region,
+  covariate_columns = "center",
   spatial_burnin = 1
 )
 
@@ -110,7 +129,8 @@ hawkes
 ```
 
 The returned object is an `sf` tibble containing the event coordinates (`x`,
-`y`), occurrence times (`t`), and a geometry column.
+`y`), occurrence times (`t`), the `center` covariate at each location, and a
+geometry column.
 
 ```{r head-events}
 head(sf::st_drop_geometry(hawkes))
@@ -150,7 +170,7 @@ quickly; here we perturb the true parameters slightly.
 
 ```{r estimation}
 initial_values <- list(
-  background_rate = list(intercept = -3.5),
+  background_rate = list(intercept = -6, center = 2.5),
   triggering_rate = 0.5,
   spatial   = list(mean = 0, sd = 0.5),
   temporal  = list(rate = 1.8)
