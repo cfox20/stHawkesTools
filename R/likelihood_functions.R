@@ -1,16 +1,22 @@
 #' Compute Conditional Intensity at Each Event
 #'
-#' @param hawkes A hawkes object
-#' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
+#' @param hawkes A `hawkes` object.
+#' @param parameters Named list containing background, triggering, spatial, and temporal
+#'   parameters. Values usually represent current estimates.
 #'
-#' @returns A numeric vector
+#' @returns A numeric vector.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 #' conditional_intensity(hawkes, params)
 conditional_intensity <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -85,28 +91,46 @@ conditional_intensity <- function(hawkes, parameters) {
 }
 
 
-#' Compute the Conditional Intensity at a Specified Time t
+#' Compute the conditional intensity at a specified time
 #'
 #' @param hawkes A `hawkes` object.
-#' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
-#' @param time A time to evaluate the conditional intensity.
-#' @param stepsize A numeric value specifying the size of the grid to evaluate the conditional intensity over.
+#' @param parameters Named list containing background, triggering, spatial, and temporal
+#'   parameters.
+#' @param time Time point where the conditional intensity is evaluated.
+#' @param stepsize Grid cell size used to evaluate the spatial intensity.
 #'
-#' @returns A numeric vector
+#' @returns A numeric vector.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
-#' spatial_conditional_intensity(hawkes, params, 25, .5)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' spatial_conditional_intensity(hawkes, params, 25, 0.5)
 #'
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #'
-#' spatial_conditional_intensity(hawkes, params, 25, .5)
+#' spatial_conditional_intensity(hawkes, params, 25, 0.5)
 spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
@@ -196,22 +220,28 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 }
 
 
-#' Compute the Conditional Intensity at a Specified Location (x,y)
+#' Compute the conditional intensity at a location
 #'
 #' @param hawkes A `hawkes` object.
-#' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
-#' @param coordinates A numeric vector of length 2 to specify the location to evaluate the conditional intensity.
-#' @param step A numeric value specifying the size of the grid to evaluate the conditional intensity over.
+#' @param parameters Named list containing background, triggering, spatial, and temporal
+#'   parameters.
+#' @param coordinates Numeric vector of length two giving the evaluation location.
+#' @param step Grid step size used to build the temporal evaluation grid.
 #'
-#' @returns A numeric vector
+#' @returns A numeric vector.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
-#' temporal_conditional_intensity(hawkes, params, c(5,5))
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' temporal_conditional_intensity(hawkes, params, c(5, 5))
 temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
@@ -298,19 +328,25 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 }
 
 
-#' Compute Log-Likelihood
+#' Compute log-likelihood
 #'
-#' @param hawkes A hawkes object
-#' @param parameters A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.
+#' @param hawkes A `hawkes` object.
+#' @param parameters Named list containing background, triggering, spatial, and temporal
+#'   parameters.
 #'
 #' @returns A numeric vector.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.5,spatial = list(mean = 0, sd = 0.5),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, c(0,50), spatial_region)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.5),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, c(0, 50), spatial_region)
 #' log_likelihood(hawkes, params)
 log_likelihood <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")

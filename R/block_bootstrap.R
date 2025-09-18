@@ -1,16 +1,28 @@
 
 #' Wrap data for block sampling
 #'
-#' @param hawkes A `hawkes` object
-#' @param block_length_t A numeric value to set the length of blocks to wrap the process.
+#' @param hawkes A `hawkes` object.
+#' @param block_length_t Length of the temporal block appended to wrap the process.
 #'
 #' @returns A `hawkes` object.
 #' @export
 #'
 #' @examples
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.25),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #' extend_data_t_only(hawkes, 5)
 #'
 extend_data_t_only <- function(hawkes, block_length_t) {
@@ -50,18 +62,30 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 }
 
 
-#' Resample data with moving blocls
+#' Resample data with moving blocks
 #'
-#' @param hawkes A `hawkes` object
-#' @param num_blocks A numeric value to set the number of blocks to be used for resampling.
+#' @param hawkes A `hawkes` object.
+#' @param num_blocks Number of blocks used for resampling.
 #'
 #' @returns A `hawkes` object.
 #' @export
 #'
 #' @examples
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.25),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #'
 #' sample_blocks(hawkes, 25)
 #'
@@ -109,27 +133,47 @@ sample_blocks <- function(hawkes, num_blocks) {
             covariate_columns = covariate_columns)
 }
 
-#' Block Bootstrap for Confidence Intervals of Hawkes MLEs
+#' Block bootstrap for Hawkes MLE confidence intervals
 #'
-#' @param hawkes A `hawkes` object
-#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
-#' @param B number of bootstrap iterations
-#' @param num_blocks number of blocs to sample for each bootstap iteration.
-#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
-#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
-#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
-#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
+#' @param hawkes A `hawkes` object.
+#' @param est A `hawkes_est` object containing parameter estimates for `hawkes`.
+#' @param B Number of bootstrap iterations.
+#' @param num_blocks Number of blocks sampled during each bootstrap iteration.
+#' @param alpha Type I error rate for the confidence intervals. Defaults to 0.05.
+#' @param parallel Logical flag for `furrr` based parallel computation.
+#' @param max_iters Maximum EM iterations per fit. Defaults to 500.
+#' @param boundary Optional boundary width used for edge correction.
 #'
-#' @returns A `hawkes` object.
+#' @returns A tibble of bootstrap estimates.
 #' @export
 #'
 #' @examples
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.25),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
-#' block_bootstrap(hawkes, est, B = 2, num_blocks = 25, alpha = .05, parallel = FALSE, boundary = 1)
+#' block_bootstrap(
+#'   hawkes,
+#'   est,
+#'   B = 2,
+#'   num_blocks = 25,
+#'   alpha = 0.05,
+#'   parallel = FALSE,
+#'   boundary = 1
+#' )
 #'
 block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
