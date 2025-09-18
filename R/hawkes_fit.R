@@ -73,6 +73,8 @@ new_hawkes_fit <- function(hawkes, est) {
 #' est <- hawkes_mle(hawkes, inits = params)
 #' confint(est)
 confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
+  message("Asymptotic confidence inervals are known to undercover. Consider bootstrap methods.")
+
   hawkes <- if (!is.null(object$hawkes_object)) object$hawkes_object else object$hawkes
 
   est <- if (!is.null(object$estimate)) object$estimate else object$est
@@ -251,6 +253,7 @@ print.summary.hawkes_fit <- function(x, digits = x$digits, ...) {
   cat("Coefficients:\n")
   stats::printCoefmat(x$coefficients, digits = digits, has.Pvalue = FALSE)
   cat(sprintf("\nConfidence level used: %.1f%%\n", 100 * x$conf.level))
+
 
   invisible(x)
 }
