@@ -5,6 +5,11 @@
 #' @param xmax horizontal maximum of spatial region
 #' @param ymin vertical minimum of spatial region
 #' @param ymax vertical maximum of spatial region
+#' @param covariates a matrix, data.frame, or tibble containing columns specifying covariate values for the grid.
+#' The number of rows must equal `n_grid[1]*n_grid[2]`. The values fill in the region
+#' left to right, then bottom to top.
+#' @param n_grid numeric vector of length 2 specifying dimensions for the grid
+#' of covariate regions. e.g. `n_grid = c(10,20)`
 #' @param crs coordinate reference system. Defaults to NA if unused.
 #'
 #' @returns an sf object with a rectangular region
@@ -12,12 +17,22 @@
 #'
 #' @examples
 #' create_rectangular_sf(0,10,0,10)
-create_rectangular_sf <- function(xmin, xmax, ymin, ymax, crs = NA) {
-  sf::st_as_sfc(sf::st_bbox(c(xmin = xmin,
-                              ymin = ymin,
-                              xmax = xmax,
-                              ymax = ymax)), crs = crs) |>
-    sf::st_as_sf()
+create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_grid = c(1,1), crs = NA) {
+  spatial_region <- sf::st_as_sfc(sf::st_bbox(c(xmin = xmin,
+                                                ymin = ymin,
+                                                xmax = xmax,
+                                                ymax = ymax)), crs = crs) |>
+    sf::st_as_sf() |>
+    sf::st_make_grid(n = n_grid) |>
+    sf::st_as_sf() |>
+    dplyr::rename(geometry = .data$x) |>
+    dplyr::mutate(geoid = dplyr::row_number())
+
+  # no covariates
+  if (is.null(covariates)) return(spatial_region)
+
+  spatial_region |>
+    cbind(covariates)
 }
 
 #' Simulate background events
