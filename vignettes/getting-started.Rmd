@@ -42,7 +42,10 @@ before working through this vignette.
 
 ```{r setup}
 library("stHawkesTools")
-library("tidyverse")
+library("dplyr")
+library("tibble")
+library("tidyr")
+library("ggplot2")
 theme_set(theme_minimal())
 theme_update(panel.grid.minor = element_blank(), 
   plot.title = element_text(hjust = 0.5))
@@ -151,15 +154,6 @@ plot_hawkes(hawkes, color = "time")
 plot_hawkes(hawkes, color = "background")
 ```
 
-Because `plot_hawkes()` returns a standard `ggplot2` object, further
-customisation is straightforward.
-
-```{r plot-custom, fig.width=5.5, fig.height=5.5}
-plot_hawkes(hawkes, color = "time") +
-  ggplot2::labs(title = "Simulated Hawkes process",
-                colour = "Event time") +
-  ggplot2::theme_minimal()
-```
 
 ## Maximum likelihood estimation
 
@@ -194,6 +188,28 @@ from the observed information matrix.
 ```{r estimation-summary}
 summary(est)
 ```
+
+## Visualising the fitted intensity surface
+
+The fitted model lets us interrogate the conditional intensity across space and
+time.  Evaluating the spatial intensity at the end of the observation window
+highlights how the covariate concentrates activity in the middle of the region,
+while the temporal profile at the centre of the window shows how excitation
+builds as events occur.
+
+```{r fitted-intensity}
+intensity_views <- plot_intensity(
+  hawkes,
+  est,
+  stepsize = 0.1,
+  time = 40,
+  coordinates = c(5, 5)
+)
+
+intensity_views$spatial
+intensity_views$temporal
+```
+
 
 ## Uncertainty assessment with the cluster bootstrap
 

@@ -158,10 +158,6 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
   spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
 
 
-  if(!is.null(covariate_columns)){
-    covariate_columns <- NULL
-  }
-
   hawkes <- hawkes[hawkes$t < time,]
 
   time_window[2] <- time
