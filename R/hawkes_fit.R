@@ -30,8 +30,8 @@ new_hawkes_fit <- function(hawkes, est) {
 #' @param level Confidence level for the interval. Default is 0.95.
 #' @param ... Additional arguments passed to other methods.
 #'
-#' @return A tibble with point estimates and lower/upper bounds using `confint()` style
-#'   column names.
+#' @return A tibble with point estimates, standard errors, and interval bounds labeled
+#'   according to the requested confidence level.
 #'
 #' @details Fixed parameters, if any, are excluded when computing intervals.
 #'
@@ -90,16 +90,21 @@ confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
 
   z <- -stats::qnorm((alpha)/2)
 
-  lower_name <- paste0(formatC(100 * alpha / 2, format = "f", digits = 1), " %")
-  upper_name <- paste0(formatC(100 * (1 - alpha / 2), format = "f", digits = 1), " %")
+  lower_name <- sprintf("%s %%", formatC(100 * alpha / 2, format = "f", digits = 1))
+  upper_name <- sprintf("%s %%", formatC(100 * (1 - alpha / 2), format = "f", digits = 1))
 
-  tibble::tibble(
+  out <- tibble::tibble(
     Variable = names(est_vec),
     Estimate = est_vec,
     std_error = sqrt(diag(cov_est)),
     Lower = est_vec - z * sqrt(diag(cov_est)),
     Upper = est_vec + z * sqrt(diag(cov_est))
   )
+
+  names(out)[names(out) == "Lower"] <- lower_name
+  names(out)[names(out) == "Upper"] <- upper_name
+
+  out
 }
 
 
@@ -136,18 +141,23 @@ print.hawkes_fit <- function(x, ...) {
 }
 
 
-#' Print hawkes fit object
-#'
+
+#' Summarize a hawkes fit object
+#' 
 #' @param object a hawkes fit object to be summarized.
-#' @param level Confidence level used for interval estimates. Default is 0.95.
+#' @param level Confidence level used for interval estimates; the coefficient table
+#'   headings match this level. Default is 0.95.
 #' @param digits Minimum number of significant digits to print.
 #' @param ... Further arguments passed to or from other methods.
 #'
 #' @return An object of class `summary.hawkes_fit` containing the coefficient table,
 #'   residual summary, and the confidence level used.
+#' @note Wald confidence intervals are known to undercover; bootstrap-based intervals are
+#'   recommended for inference.
 #'
 #' @export
-#'
+#' 
+
 summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...) {
   if (!inherits(object, "hawkes_fit")) {
     stop("`object` must be a `hawkes_fit`.")
@@ -173,6 +183,11 @@ summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption(
   } else {
     residual_summary <- NULL
   }
+
+  warning(
+    "Wald confidence intervals are known to undercover; bootstrap-based intervals are recommended.",
+    call. = FALSE
+  )
 
   conf_df <- as.data.frame(conf_tbl)
 
@@ -205,12 +220,15 @@ summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption(
   conf_df <- conf_df[order_idx, , drop = FALSE]
   row_labels <- row_labels[order_idx]
 
-  alpha <- 1 - level
-  lower_col <- paste0(formatC(100 * alpha / 2, format = "f", digits = 1), "%")
-  upper_col <- paste0(formatC(100 * (1 - alpha / 2), format = "f", digits = 1), "%")
 
-  coef_mat <- as.matrix(conf_df[, c("Estimate", "std_error", "Lower", "Upper")])
-  colnames(coef_mat) <- c("Estimate", "Std. Error", lower_col, upper_col)
+  interval_cols <- colnames(conf_df)[!(colnames(conf_df) %in% c("Variable", "Estimate", "std_error"))]
+  if (length(interval_cols) != 2) {
+    stop("Confidence interval table must contain exactly two interval columns.")
+  }
+
+  coef_mat <- as.matrix(conf_df[, c("Estimate", "std_error", interval_cols)])
+  colnames(coef_mat) <- c("Estimate", "Std. Error", interval_cols)
+
   rownames(coef_mat) <- row_labels
 
   n_obs <- NA_integer_

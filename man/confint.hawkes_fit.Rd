@@ -16,8 +16,8 @@
 \item{...}{Further arguments passed to or from other methods.}
 }
 \value{
-A data frame with the point estimates and corresponding lower and upper confidence bounds.
-The column names match the default format of \code{confint()}, e.g., \code{"2.5 \%"}, \code{"97.5 \%"}.
+A data frame with the point estimates, standard errors, and Wald confidence bounds.
+The interval column headings reflect the requested confidence level (e.g., \code{"5.0 \%"}, \code{"95.0 \%"}).
 }
 \description{
 Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
