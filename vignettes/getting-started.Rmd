@@ -7,26 +7,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r, include = FALSE, eval = TRUE}
-run_examples <- identical(Sys.getenv("NOT_CRAN"), "true") ||
-  identical(Sys.getenv("IN_PKGDOWN"), "true")
-
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>",
-  eval = run_examples
+  comment = "#>"
 )
-```
-
-```{r cran-note, echo = FALSE, eval = TRUE}
-if (!run_examples) {
-  knitr::asis_output(
-    paste0(
-      "**Note:** Code chunks in this vignette are not evaluated on CRAN to keep build times manageable. ",
-      "Set `Sys.setenv(NOT_CRAN = \"true\")` before knitting to reproduce the results locally."
-    )
-  )
-}
 ```
 
 The `stHawkesTools` package provides utilities for simulating, fitting, and
@@ -44,17 +29,14 @@ exponential temporal kernel supplied with the package.
 
 ## Installation
 
-`stHawkesTools` is currently available from GitHub while the package is being
-prepared for CRAN submission. Install the development version with `remotes` to
-follow along with this vignette.
+The development version of `stHawkesTools` is hosted on GitHub.  Install it
+with `remotes::install_github()` (or the equivalent `devtools::install_github()`)
+before working through this vignette.
 
-```{r install-github, eval = FALSE}
+```{r install, eval = FALSE}
 # install.packages("remotes")
 # remotes::install_github("cfox20/stHawkesTools")
 ```
-
-Once a release is published to CRAN the standard `install.packages()` workflow
-will work without modification.
 
 ## Setup
 
