@@ -10,9 +10,9 @@
 \item{x}{A numeric vector.}
 }
 \value{
-A numeric vector of the same length as \code{x} with \code{log(pmax(x, .Machine$double.eps))}.
+A numeric vector equal to \code{log(pmax(x, .Machine$double.eps))}.
 }
 \description{
-Computes the natural logarithm of a numeric vector, replacing values too close to zero with a small positive constant to avoid \code{-Inf} or \code{NaN} results.
+Safe logarithm with lower bound
 }
 \keyword{internal}

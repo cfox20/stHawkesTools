@@ -2,7 +2,7 @@
 % Please edit documentation in R/maximization_functions.R
 \name{.optim_named}
 \alias{.optim_named}
-\title{Optimize kernel parameters with named list support}
+\title{Optimize kernel parameters from named lists}
 \usage{
 .optim_named(
   fn,
@@ -30,6 +30,7 @@
 A named list with updated parameter estimates for the specified component.
 }
 \description{
-Optimizes a likelihood function using \code{optim()} with parameters passed as a named list. Only non-fixed parameters are estimated.
+Uses \code{optim()} to minimize a likelihood while accepting parameters stored in named
+lists. Only parameters not marked as fixed are updated.
 }
 \keyword{internal}

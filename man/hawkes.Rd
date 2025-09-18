@@ -15,22 +15,23 @@ hawkes(
 )
 }
 \arguments{
-\item{data}{A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.}
+\item{data}{Data frame or \code{sf} object with columns \code{x}, \code{y}, and \code{t}. Defaults to \code{NULL}.}
 
-\item{params}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.}
+\item{params}{Optional named list holding background, triggering, spatial, and temporal
+parameters.}
 
-\item{time_window}{A numeric vector of length 2 specifying the time window.}
+\item{time_window}{Numeric vector of length two defining the observation window.}
 
-\item{spatial_region}{An sf object defining the spatial region and covariate regions.}
+\item{spatial_region}{\code{sf} object describing the spatial domain and covariate regions.}
 
-\item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
+\item{spatial_family}{Spatial triggering kernel or list of custom kernel functions.}
 
-\item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
+\item{temporal_family}{Temporal triggering kernel or list of custom kernel functions.}
 
-\item{covariate_columns}{A character vector containing the names of covariates columns to be used for the model.}
+\item{covariate_columns}{Optional character vector naming background covariates.}
 }
 \value{
-A hawkes object containing a tibble with the events.
+A hawkes object containing a tibble of events.
 }
 \description{
 Constructor for a hawkes object

@@ -2,35 +2,53 @@
 % Please edit documentation in R/likelihood_functions.R
 \name{spatial_conditional_intensity}
 \alias{spatial_conditional_intensity}
-\title{Compute the Conditional Intensity at a Specified Time t}
+\title{Compute the conditional intensity at a specified time}
 \usage{
 spatial_conditional_intensity(hawkes, parameters, time, stepsize)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
 
-\item{parameters}{A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Note that these values are of the same form as the true values in the Hawkes object but are often estimates passed to the function.}
+\item{parameters}{Named list containing background, triggering, spatial, and temporal
+parameters.}
 
-\item{time}{A time to evaluate the conditional intensity.}
+\item{time}{Time point where the conditional intensity is evaluated.}
 
-\item{stepsize}{A numeric value specifying the size of the grid to evaluate the conditional intensity over.}
+\item{stepsize}{Grid cell size used to evaluate the spatial intensity.}
 }
 \value{
-A numeric vector
+A numeric vector.
 }
 \description{
-Compute the Conditional Intensity at a Specified Time t
+Compute the conditional intensity at a specified time
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
-spatial_conditional_intensity(hawkes, params, 25, .5)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+spatial_conditional_intensity(hawkes, params, 25, 0.5)
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 
-spatial_conditional_intensity(hawkes, params, 25, .5)
+spatial_conditional_intensity(hawkes, params, 25, 0.5)
 }

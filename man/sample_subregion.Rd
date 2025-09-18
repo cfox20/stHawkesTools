@@ -7,9 +7,9 @@
 sample_subregion(hawkes, length)
 }
 \arguments{
-\item{hawkes}{A \code{hawkes} object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{length}{A numeric value to set the length of the subsample.}
+\item{length}{Length of the temporal subsample.}
 }
 \value{
 A \code{hawkes} object.
@@ -18,10 +18,15 @@ A \code{hawkes} object.
 Resample data with moving blocls
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 sample_subregion(hawkes, 25)
 

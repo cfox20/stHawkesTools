@@ -2,17 +2,17 @@
 % Please edit documentation in R/internals.R
 \name{.hawkes_mle_to_dataframe}
 \alias{.hawkes_mle_to_dataframe}
-\title{Convert Hawkes Parameter List to Data Frame}
+\title{Convert Hawkes parameter list to data frame}
 \usage{
 .hawkes_mle_to_dataframe(est)
 }
 \arguments{
-\item{est}{A hawkes_fit object of fitted parameter values from a Hawkes model, typically returned by \code{hawkes_mle()}.}
+\item{est}{A \code{hawkes_fit} object or parameter list, typically from \code{hawkes_mle()}.}
 }
 \value{
-A data frame
+A data frame.
 }
 \description{
-Converts a fitted Hawkes parameter list into a tidy data frame with one row per parameter.
+Converts fitted Hawkes parameters into a tidy data frame with one row per value.
 }
 \keyword{internal}

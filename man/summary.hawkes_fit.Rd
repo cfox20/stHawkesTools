@@ -2,14 +2,29 @@
 % Please edit documentation in R/hawkes_fit.R
 \name{summary.hawkes_fit}
 \alias{summary.hawkes_fit}
+\alias{print.summary.hawkes_fit}
 \title{Print hawkes fit object}
 \usage{
-\method{summary}{hawkes_fit}(object, ...)
+\method{summary}{hawkes_fit}(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...)
+
+\method{print}{summary.hawkes_fit}(x, digits = x$digits, ...)
 }
 \arguments{
-\item{object}{a hawkes fit object to be printed}
+\item{object}{a hawkes fit object to be summarized.}
+
+\item{level}{Confidence level used for interval estimates. Default is 0.95.}
+
+\item{digits}{Minimum number of significant digits to print.}
 
 \item{...}{Further arguments passed to or from other methods.}
+
+\item{x}{A \code{summary.hawkes_fit} object produced by \code{summary.hawkes_fit()}.}
+}
+\value{
+An object of class \code{summary.hawkes_fit} containing the coefficient table,
+residual summary, and the confidence level used.
+
+For \code{print.summary.hawkes_fit()}, returns \code{x} (invisibly).
 }
 \description{
 Print hawkes fit object

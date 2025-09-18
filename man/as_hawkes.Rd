@@ -2,7 +2,7 @@
 % Please edit documentation in R/hawkes_object.R
 \name{as_hawkes}
 \alias{as_hawkes}
-\title{Convert an Object to Type Hawkes}
+\title{Convert an object to a hawkes}
 \usage{
 as_hawkes(
   data,
@@ -14,23 +14,24 @@ as_hawkes(
 )
 }
 \arguments{
-\item{data}{A dataframe containing the event locations in the columns x, y, and t or an sf object containing the event locations in geometry and the event times in a column named t.}
+\item{data}{Data frame with columns \code{x}, \code{y}, and \code{t}, or an \code{sf} object with event
+geometry and a \code{t} column.}
 
-\item{time_window}{A numeric vector of length 2 specifying the time window.}
+\item{time_window}{Numeric vector of length two specifying the observation window.}
 
-\item{spatial_region}{An sf object defining the spatial region and covariate regions.}
+\item{spatial_region}{\code{sf} object defining the spatial domain.}
 
-\item{spatial_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
+\item{spatial_family}{Spatial triggering kernel or list of custom kernel helpers.}
 
-\item{temporal_family}{A spatial triggering kernel function to generate data from. Defaults to NULL if not used.}
+\item{temporal_family}{Temporal triggering kernel or list of custom kernel helpers.}
 
-\item{covariate_columns}{A character vector containing the names of covariates columns to be used for the model. Defaults to NULL if not used}
+\item{covariate_columns}{Optional character vector naming background covariates.}
 }
 \value{
 A hawkes object.
 }
 \description{
-Convert an Object to Type Hawkes
+Convert an object to a hawkes
 }
 \examples{
 df <- data.frame(
@@ -40,8 +41,14 @@ df <- data.frame(
 )
 
 # Convert to hawkes object
-spatial_region <- create_rectangular_sf(0,10,0,10)
-hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
+hawkes_df <- as_hawkes(
+  df,
+  c(0, 50),
+  spatial_region,
+  spatial_family = "Gaussian",
+  temporal_family = "Exponential"
+)
 print(hawkes_df)
 
 }

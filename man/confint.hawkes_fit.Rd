@@ -2,44 +2,60 @@
 % Please edit documentation in R/hawkes_fit.R
 \name{confint.hawkes_fit}
 \alias{confint.hawkes_fit}
-\title{Wald Confidence Intervals for Hawkes Model Parameters}
+\title{Wald confidence intervals for Hawkes model parameters}
 \usage{
 \method{confint}{hawkes_fit}(object, parm = NULL, level = 0.95, ...)
 }
 \arguments{
-\item{object}{A \code{hawkes_fit} object}
+\item{object}{A \code{hawkes_fit} object.}
 
-\item{parm}{Parameters to create confidence interval for. (currently not used)}
+\item{parm}{Optional parameter subset (currently unused).}
 
 \item{level}{Confidence level for the interval. Default is 0.95.}
 
-\item{...}{Further arguments passed to or from other methods.}
+\item{...}{Additional arguments passed to other methods.}
 }
 \value{
-A data frame with the point estimates and corresponding lower and upper confidence bounds.
-The column names match the default format of \code{confint()}, e.g., \code{"2.5 \%"}, \code{"97.5 \%"}.
+A tibble with point estimates and lower/upper bounds using \code{confint()} style
+column names.
 }
 \description{
-Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
-using the estimated covariance matrix from the observed information (negative Hessian).
+Computes Wald confidence intervals for Hawkes model parameters using the observed
+information (negative Hessian) as a covariance estimate.
 }
 \details{
-The function uses the estimated Hessian of the log-likelihood to compute the covariance matrix.
-Fixed parameters (if any) are excluded from the interval computation.
+Fixed parameters, if any, are excluded when computing intervals.
 }
 \examples{
 set.seed(123)
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 confint(est)
 
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 0
+)
 est <- hawkes_mle(hawkes, inits = params)
 confint(est)
 }

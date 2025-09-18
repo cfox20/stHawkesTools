@@ -2,21 +2,21 @@
 % Please edit documentation in R/internals.R
 \name{.vector_input_log_likelihood}
 \alias{.vector_input_log_likelihood}
-\title{Wrapper for likelihood for numerical optimization}
+\title{Wrapper for likelihood used in numerical optimization}
 \usage{
 .vector_input_log_likelihood(par_vec, hawkes, param_template)
 }
 \arguments{
-\item{par_vec}{a numeric vector of the parameter initial values}
+\item{par_vec}{Numeric vector of parameter values.}
 
-\item{hawkes}{a hawkes object}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{param_template}{a template to reconstruct the parameter object}
+\item{param_template}{Template used to reconstruct the parameter list.}
 }
 \value{
-A numeric of the log_likelihood
+The log-likelihood evaluated at \code{par_vec}.
 }
 \description{
-Wrapper for likelihood for numerical optimization
+Wrapper for likelihood used in numerical optimization
 }
 \keyword{internal}

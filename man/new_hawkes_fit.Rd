@@ -7,12 +7,12 @@
 new_hawkes_fit(hawkes, est)
 }
 \arguments{
-\item{hawkes}{The original hawkes object used to fit the model}
+\item{hawkes}{The original \code{hawkes} object used to fit the model.}
 
-\item{est}{A named nested list of estimated parameters, e.g. from \code{hawkes_mle()}}
+\item{est}{Named nested list of estimated parameters, e.g., from \code{hawkes_mle()}.}
 }
 \value{
-An object of class \code{hawkes_fit}
+An object of class \code{hawkes_fit}.
 }
 \description{
 Construct a hawkes_fit object from estimated parameters

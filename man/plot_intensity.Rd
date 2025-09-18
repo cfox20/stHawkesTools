@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_hawkes.R
 \name{plot_intensity}
 \alias{plot_intensity}
-\title{Plot Conditional Intensity of Hawkes Process}
+\title{Plot conditional intensity of a Hawkes process}
 \usage{
 plot_intensity(hawkes, est, stepsize, time = NULL, coordinates = NULL)
 }
@@ -15,31 +15,48 @@ plot_intensity(hawkes, est, stepsize, time = NULL, coordinates = NULL)
 
 \item{time}{A numeric value giving the time at which to evaluate the conditional intensity.}
 
-\item{coordinates}{A numeric vector of length 2 specifying the coordinates where to evalute the conditional intensity over time.}
+\item{coordinates}{Numeric vector of length two giving the evaluation location.}
 }
 \value{
-A list of \code{ggplot2} objects showing the spatial intensity and temporal intensity at a given time or location.
+A list of \code{ggplot2} objects showing spatial and temporal intensity views.
 }
 \description{
-Visualizes the conditional intensity function at a fixed time over a spatial grid, based on a fitted Hawkes model.
+Visualizes the conditional intensity over space or time given a fitted Hawkes model.
 }
 \examples{
 # example code
 set.seed(123)
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
-plot_intensity(hawkes, est, stepsize = .25, time = 40)
-plot_intensity(hawkes, est, stepsize = .25, coordinates = c(5,5))
-plot_intensity(hawkes, est, stepsize = .25, coordinates = c(5,5), time = 40)
+plot_intensity(hawkes, est, stepsize = 0.25, time = 40)
+plot_intensity(hawkes, est, stepsize = 0.25, coordinates = c(5, 5))
+plot_intensity(hawkes, est, stepsize = 0.25, coordinates = c(5, 5), time = 40)
 
-params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+params <- list(
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
 data("example_background_covariates")
-hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = c("X1", "X2"),
+  spatial_burnin = 1
+)
 est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 plot_hawkes(hawkes)
-plot_intensity(hawkes, est, stepsize = .1, time = 40, coordinates = c(4.5, 5))
+plot_intensity(hawkes, est, stepsize = 0.1, time = 40, coordinates = c(4.5, 5))
 }

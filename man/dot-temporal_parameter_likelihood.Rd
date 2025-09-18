@@ -2,7 +2,7 @@
 % Please edit documentation in R/maximization_functions.R
 \name{.temporal_parameter_likelihood}
 \alias{.temporal_parameter_likelihood}
-\title{Temporal triggering kernel parameter likelihood}
+\title{Temporal kernel likelihood contribution}
 \usage{
 .temporal_parameter_likelihood(
   p,
@@ -22,9 +22,10 @@
 \item{time_diff}{A matrix of pairwise time differences.}
 }
 \value{
-The negative log-likelihood contribution of the temporal triggering parameters.
+The negative log-likelihood contribution of the temporal parameters.
 }
 \description{
-Computes the (negative) expected complete-data log-likelihood for temporal triggering kernel parameters.
+Evaluates the negative expected complete-data log-likelihood for temporal triggering
+kernels.
 }
 \keyword{internal}

@@ -2,34 +2,37 @@
 % Please edit documentation in R/maximum_likelihood_estimation.R
 \name{hessian_est}
 \alias{hessian_est}
-\title{Estimate the covariance matrix of the MLE using the observed information}
+\title{Estimate the covariance matrix of the MLE using observed information}
 \usage{
 hessian_est(hawkes, est)
 }
 \arguments{
-\item{hawkes}{A hawkes object.}
+\item{hawkes}{A \code{hawkes} object.}
 
-\item{est}{A hawkes_fit object from the \code{hawkes_mle()} function.}
+\item{est}{A \code{hawkes_fit} object from \code{hawkes_mle()}.}
 }
 \value{
 A named covariance matrix corresponding to the estimated parameters.
 }
 \description{
-Computes the observed information matrix (negative Hessian of the log-likelihood)
-and returns its inverse as an estimate of the covariance matrix for the MLE parameters
-in a spatio-temporal Hawkes process model.
+Computes the observed information matrix (negative Hessian of the log-likelihood) and
+returns its inverse as an estimated covariance matrix for Hawkes model parameters.
 }
 \details{
-This function requires the \pkg{numDeriv} package. It numerically approximates the
-Hessian of the full log-likelihood using central differences and inverts the negative Hessian
-to obtain the covariance estimate. The names of the matrix rows and columns are set to match
-the flattened parameter vector.
+Requires the \pkg{numDeriv} package. The Hessian of the full log-likelihood is
+approximated with central differences. The negative Hessian is inverted and its row and
+column names are matched to the flattened parameter vector.
 }
 \examples{
-spatial_region <- create_rectangular_sf(0,10,0,10)
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.75,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 hessian_est(hawkes, est$est)
 

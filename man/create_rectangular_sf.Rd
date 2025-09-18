@@ -4,7 +4,15 @@
 \alias{create_rectangular_sf}
 \title{Create Rectangular SF Object}
 \usage{
-create_rectangular_sf(xmin, xmax, ymin, ymax, crs = NA)
+create_rectangular_sf(
+  xmin,
+  xmax,
+  ymin,
+  ymax,
+  covariates = NULL,
+  n_grid = c(1, 1),
+  crs = NA
+)
 }
 \arguments{
 \item{xmin}{horizontal minimum of spatial region}
@@ -14,6 +22,13 @@ create_rectangular_sf(xmin, xmax, ymin, ymax, crs = NA)
 \item{ymin}{vertical minimum of spatial region}
 
 \item{ymax}{vertical maximum of spatial region}
+
+\item{covariates}{a matrix, data.frame, or tibble containing columns specifying covariate values for the grid.
+The number of rows must equal \code{n_grid[1]*n_grid[2]}. The values fill in the region
+left to right, then bottom to top.}
+
+\item{n_grid}{numeric vector of length 2 specifying dimensions for the grid
+of covariate regions. e.g. \code{n_grid = c(10,20)}}
 
 \item{crs}{coordinate reference system. Defaults to NA if unused.}
 }
