@@ -37,10 +37,11 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 
 #' Simulate background events
 #'
-#' @param background_rate A vector of coefficients for the background covariates.
-#' @param time_window A numeric vector of length 2 specifying the simulated time window.
-#' @param spatial_region An sf object defining the spatial region for simulation.
-#' @param covariate_columns A character vector of the names of the columns in spatial_region to be used as background covariates.
+#' @param background_rate Vector of coefficients for the background covariates.
+#' @param time_window Numeric vector of length two giving the simulated time window.
+#' @param spatial_region `sf` object defining the simulation region.
+#' @param covariate_columns Optional character vector naming background covariates in
+#'   `spatial_region`.
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -48,8 +49,8 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
-#' time_window <- c(0,50)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
+#' time_window <- c(0, 50)
 #' background_rate <- -4
 #'
 #' sim_background_events(background_rate, time_window, spatial_region)
@@ -127,16 +128,20 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 
 
 
-#' Generate a Hawkes Process
+#' Generate a Hawkes process
 #'
-#' @param params A named list of lists containing the values for the background rate, triggering rate, spatial parameters in a named list, and temporal parameters in a named list. See example for exact specification.
-#' @param time_window A numeric vector of length 2 specifying the simulated time window.
-#' @param spatial_region An sf object defining the spatial region for simulation.
-#' @param covariate_columns A character vector of the names of the columns in spatial_region to be used as background covariates.
-#' @param temporal_burnin Temporal burn-in for simulation. Defaults to 1/10 of the length of the time window if not used.
-#' @param spatial_burnin Spatial burn-in for simulation. Defaults to the area of spatial_region^.25.
-#' @param temporal_family A temporal triggering kernel function to generate data from. Defaults to "Exponential" if not used. Other options include "Power Law", "Uniform", and "Gamma".
-#' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to "Gaussian" if not used. Other options include "Uniform" and "Exponential"
+#' @param params Named list containing background, triggering, spatial, and temporal
+#'   parameters. See the examples for the expected structure.
+#' @param time_window Numeric vector of length two specifying the simulated window.
+#' @param spatial_region `sf` object defining the spatial region.
+#' @param covariate_columns Optional character vector naming background covariates.
+#' @param temporal_burnin Temporal burn-in duration. Defaults to one tenth of the window
+#'   length.
+#' @param spatial_burnin Spatial burn-in radius. Defaults to `area(spatial_region)^0.25`.
+#' @param temporal_family Temporal triggering kernel. Defaults to "Exponential". Other
+#'   options include "Power Law", "Uniform", and "Gamma".
+#' @param spatial_family Spatial triggering kernel. Defaults to "Gaussian". Other options
+#'   include "Uniform" and "Exponential".
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -144,14 +149,36 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' (hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1))
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' (hawkes <- rHawkes(
+#'   params,
+#'   time_window = c(0, 50),
+#'   spatial_region = spatial_region,
+#'   spatial_burnin = 1
+#' ))
 #'
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 rHawkes <- function(params, time_window, spatial_region, covariate_columns = NULL,
                     temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
                     temporal_family = "Exponential", spatial_family = "Gaussian") {

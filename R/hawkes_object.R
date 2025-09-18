@@ -3,15 +3,16 @@
 
 #' Constructor for a hawkes object
 #'
-#' @param data A dataframe containing the event locations in the columns x, y, and t. Defaults to NULL if not used.
-#' @param params A named list of lists containing the values for the background rate, triggering ratio, spatial parameters in a named list, and temporal parameters in a named list. Defaults to NULL if not used.
-#' @param time_window A numeric vector of length 2 specifying the time window.
-#' @param spatial_region An sf object defining the spatial region and covariate regions.
-#' @param covariate_columns A character vector containing the names of covariates columns to be used for the model.
-#' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
-#' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
+#' @param data Data frame or `sf` object with columns `x`, `y`, and `t`. Defaults to `NULL`.
+#' @param params Optional named list holding background, triggering, spatial, and temporal
+#'   parameters.
+#' @param time_window Numeric vector of length two defining the observation window.
+#' @param spatial_region `sf` object describing the spatial domain and covariate regions.
+#' @param covariate_columns Optional character vector naming background covariates.
+#' @param spatial_family Spatial triggering kernel or list of custom kernel functions.
+#' @param temporal_family Temporal triggering kernel or list of custom kernel functions.
 #'
-#' @returns A hawkes object containing a tibble with the events.
+#' @returns A hawkes object containing a tibble of events.
 #' @export
 #'
 hawkes <- function(data = NULL, params = NULL,
@@ -162,14 +163,15 @@ hawkes <- function(data = NULL, params = NULL,
 #
 
 
-#' Convert an Object to Type Hawkes
+#' Convert an object to a hawkes
 #'
-#' @param data A dataframe containing the event locations in the columns x, y, and t or an sf object containing the event locations in geometry and the event times in a column named t.
-#' @param time_window A numeric vector of length 2 specifying the time window.
-#' @param spatial_region An sf object defining the spatial region and covariate regions.
-#' @param spatial_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
-#' @param temporal_family A spatial triggering kernel function to generate data from. Defaults to NULL if not used.
-#' @param covariate_columns A character vector containing the names of covariates columns to be used for the model. Defaults to NULL if not used
+#' @param data Data frame with columns `x`, `y`, and `t`, or an `sf` object with event
+#'   geometry and a `t` column.
+#' @param time_window Numeric vector of length two specifying the observation window.
+#' @param spatial_region `sf` object defining the spatial domain.
+#' @param spatial_family Spatial triggering kernel or list of custom kernel helpers.
+#' @param temporal_family Temporal triggering kernel or list of custom kernel helpers.
+#' @param covariate_columns Optional character vector naming background covariates.
 #'
 #' @returns A hawkes object.
 #' @export
@@ -182,8 +184,14 @@ hawkes <- function(data = NULL, params = NULL,
 #' )
 #'
 #' # Convert to hawkes object
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
-#' hawkes_df <- as_hawkes(df, c(0,50), spatial_region, spatial_family = "Gaussian", temporal_family = "Exponential")
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
+#' hawkes_df <- as_hawkes(
+#'   df,
+#'   c(0, 50),
+#'   spatial_region,
+#'   spatial_family = "Gaussian",
+#'   temporal_family = "Exponential"
+#' )
 #' print(hawkes_df)
 #'
 as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, covariate_columns = NULL) {

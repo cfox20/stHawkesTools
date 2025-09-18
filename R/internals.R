@@ -129,13 +129,13 @@
 
 
 
-#' Convert Hawkes Parameter List to Data Frame
+#' Convert Hawkes parameter list to data frame
 #'
-#' Converts a fitted Hawkes parameter list into a tidy data frame with one row per parameter.
+#' Converts fitted Hawkes parameters into a tidy data frame with one row per value.
 #'
-#' @param est A hawkes_fit object of fitted parameter values from a Hawkes model, typically returned by `hawkes_mle()`.
+#' @param est A `hawkes_fit` object or parameter list, typically from `hawkes_mle()`.
 #'
-#' @returns A data frame
+#' @returns A data frame.
 #'
 #' @keywords internal
 .hawkes_mle_to_dataframe <- function(est) {
@@ -160,13 +160,13 @@
 }
 
 
-#' Wrapper for likelihood for numerical optimization
+#' Wrapper for likelihood used in numerical optimization
 #'
-#' @param par_vec a numeric vector of the parameter initial values
-#' @param hawkes a hawkes object
-#' @param param_template a template to reconstruct the parameter object
+#' @param par_vec Numeric vector of parameter values.
+#' @param hawkes A `hawkes` object.
+#' @param param_template Template used to reconstruct the parameter list.
 #'
-#' @returns A numeric of the log_likelihood
+#' @returns The log-likelihood evaluated at `par_vec`.
 #' @export
 #'
 #' @keywords internal
