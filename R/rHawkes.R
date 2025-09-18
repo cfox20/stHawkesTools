@@ -28,6 +28,8 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
     dplyr::rename(geometry = .data$x) |>
     dplyr::mutate(geoid = dplyr::row_number())
 
+  spatial_region$area <- sf::st_area(spatial_region) |> as.numeric()
+
   # no covariates
   if (is.null(covariates)) return(spatial_region)
 

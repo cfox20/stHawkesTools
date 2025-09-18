@@ -41,7 +41,12 @@ before working through this vignette.
 ## Setup
 
 ```{r setup}
-library(stHawkesTools)
+library("stHawkesTools")
+library("tidyverse")
+theme_set(theme_minimal())
+theme_update(panel.grid.minor = element_blank(), 
+  plot.title = element_text(hjust = 0.5))
+
 set.seed(123)
 ```
 
@@ -76,14 +81,9 @@ covariate that peaks in the middle of the region.  We can visualise both the
 observation window and this covariate surface using base `sf` plotting tools.
 
 ```{r region-plot, fig.width=10, fig.height=5}
-par(mfrow = c(1, 2), mar = c(2.5, 2.5, 2, 1))
-plot(sf::st_geometry(spatial_region),
-     col = "grey95", border = "grey40",
-     main = "Spatial observation window")
-plot(spatial_region["center"],
-     main = "Center-focused covariate",
-     pal = sf::sf.colors)
-par(mfrow = c(1, 1))
+spatial_region |> 
+  ggplot() +
+    geom_sf(aes(fill = center))
 ```
 
 ## Specifying model parameters
@@ -97,8 +97,8 @@ an intercept and the coefficient for the `center` covariate constructed above.
 
 ```{r parameters}
 true_params <- list(
-  background_rate = list(intercept = -6.5, center = 3),
-  triggering_rate = 0.6,
+  background_rate = list(intercept = -6, center = 5),
+  triggering_rate = 0.5,
   spatial   = list(mean = 0, sd = 0.45),
   temporal  = list(rate = 1.5)
 )
@@ -193,12 +193,6 @@ from the observed information matrix.
 
 ```{r estimation-summary}
 summary(est)
-```
-
-A tidy data frame of confidence intervals is also available via `confint()`:
-
-```{r estimation-confint}
-confint(est)
 ```
 
 ## Uncertainty assessment with the cluster bootstrap
