@@ -1,17 +1,18 @@
 
 #' Safe logarithm to avoid log(0)
 #'
-#' Computes the natural logarithm of a numeric vector, replacing values too close to zero with a small positive constant to avoid `-Inf` or `NaN` results.
+#' Safe logarithm with lower bound
 #'
 #' @param x A numeric vector.
 #'
-#' @returns A numeric vector of the same length as `x` with `log(pmax(x, .Machine$double.eps))`.
+#' @returns A numeric vector equal to `log(pmax(x, .Machine$double.eps))`.
 #' @keywords internal
 .safe_log <- function(x) log(pmax(x, .Machine$double.eps))
 
-#' Spatial triggering kernel parameter likelihood
+#' Spatial kernel likelihood contribution
 #'
-#' Computes the (negative) expected complete-data log-likelihood for spatial triggering kernel parameters, assuming separable spatial kernels.
+#' Evaluates the negative expected complete-data log-likelihood for separable spatial
+#' triggering kernels.
 #'
 #' @param p A named list of parameters for the spatial kernel.
 #' @param hawkes A `hawkes` object.
@@ -19,7 +20,7 @@
 #' @param x_diff A matrix of pairwise x-coordinate differences.
 #' @param y_diff A matrix of pairwise y-coordinate differences.
 #'
-#' @returns The negative log-likelihood contribution of the spatial triggering parameters.
+#' @returns The negative log-likelihood contribution of the spatial parameters.
 #' @keywords internal
 .spatial_parameter_likelihood <- function(p, hawkes, parent_est_mat, x_diff, y_diff) {
   # Extract all hawkes object attributes
@@ -47,16 +48,17 @@
 }
 
 
-#' Temporal triggering kernel parameter likelihood
+#' Temporal kernel likelihood contribution
 #'
-#' Computes the (negative) expected complete-data log-likelihood for temporal triggering kernel parameters.
+#' Evaluates the negative expected complete-data log-likelihood for temporal triggering
+#' kernels.
 #'
 #' @param p A named list of parameters for the temporal kernel.
 #' @param hawkes A `hawkes` object.
 #' @param parent_est_mat Matrix of estimated parent probabilities.
 #' @param time_diff A matrix of pairwise time differences.
 #'
-#' @returns The negative log-likelihood contribution of the temporal triggering parameters.
+#' @returns The negative log-likelihood contribution of the temporal parameters.
 #' @keywords internal
 .temporal_parameter_likelihood <- function(p, hawkes, parent_est_mat, time_diff, triggering_rate) {
   # Extract all hawkes object attributes
@@ -87,9 +89,10 @@
 }
 
 
-#' Optimize kernel parameters with named list support
+#' Optimize kernel parameters from named lists
 #'
-#' Optimizes a likelihood function using `optim()` with parameters passed as a named list. Only non-fixed parameters are estimated.
+#' Uses `optim()` to minimize a likelihood while accepting parameters stored in named
+#' lists. Only parameters not marked as fixed are updated.
 #'
 #' @param fn The objective function to minimize, taking a list of named parameters.
 #' @param param_list A named list of parameter lists (e.g., with components `spatial`, `temporal`).

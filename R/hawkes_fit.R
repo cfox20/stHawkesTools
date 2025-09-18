@@ -1,9 +1,9 @@
 #' Construct a hawkes_fit object from estimated parameters
 #'
-#' @param hawkes The original hawkes object used to fit the model
-#' @param est A named nested list of estimated parameters, e.g. from `hawkes_mle()`
+#' @param hawkes The original `hawkes` object used to fit the model.
+#' @param est Named nested list of estimated parameters, e.g., from `hawkes_mle()`.
 #'
-#' @return An object of class `hawkes_fit`
+#' @return An object of class `hawkes_fit`.
 #' @export
 new_hawkes_fit <- function(hawkes, est) {
   stopifnot(is.list(est))
@@ -19,21 +19,20 @@ new_hawkes_fit <- function(hawkes, est) {
   )
 }
 
-#' Wald Confidence Intervals for Hawkes Model Parameters
+#' Wald confidence intervals for Hawkes model parameters
 #'
-#' Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
-#' using the estimated covariance matrix from the observed information (negative Hessian).
+#' Computes Wald confidence intervals for Hawkes model parameters using the observed
+#' information (negative Hessian) as a covariance estimate.
 #'
-#' @param object A `hawkes_fit` object
-#' @param parm Parameters to create confidence interval for. (currently not used)
+#' @param object A `hawkes_fit` object.
+#' @param parm Optional parameter subset (currently unused).
 #' @param level Confidence level for the interval. Default is 0.95.
-#' @param ... Further arguments passed to or from other methods.
+#' @param ... Additional arguments passed to other methods.
 #'
-#' @return A data frame with the point estimates and corresponding lower and upper confidence bounds.
-#' The column names match the default format of `confint()`, e.g., `"2.5 %"`, `"97.5 %"`.
+#' @return A tibble with point estimates and lower/upper bounds using `confint()` style
+#'   column names.
 #'
-#' @details The function uses the estimated Hessian of the log-likelihood to compute the covariance matrix.
-#' Fixed parameters (if any) are excluded from the interval computation.
+#' @details Fixed parameters, if any, are excluded when computing intervals.
 #'
 #' @importFrom stats confint
 #'
@@ -42,17 +41,34 @@ new_hawkes_fit <- function(hawkes, est) {
 #'
 #' @examples
 #' set.seed(123)
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' confint(est)
 #'
 #'
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 0
+#' )
 #' est <- hawkes_mle(hawkes, inits = params)
 #' confint(est)
 confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {

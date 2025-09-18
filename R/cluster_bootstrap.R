@@ -1,16 +1,28 @@
-#' Resample Data by EM-ALgorithm Clustering
+#' Resample Data by EM Algorithm Clusters
 #'
-#' @param hawkes A `hawkes` object.
-#' @param parent_mat An estimate of the parent matrix produced by `parent_est`.
-#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused.
+#' @param hawkes A `hawkes` object to resample.
+#' @param parent_mat Parent probabilities estimated with `parent_est()`.
+#' @param boundary Optional boundary width used for edge correction.
 #'
-#' @returns A `hawkes` object.
+#' @returns A resampled `hawkes` object.
 #' @export
 #'
 #' @examples
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.25),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #' parent_mat <- parent_est(hawkes, est)
 #' sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
@@ -123,23 +135,35 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
 }
 
 
-#' Block Bootstrap for Confidence Intervals of Hawkes MLEs
+#' Block Bootstrap Confidence Intervals for Hawkes MLEs
 #'
-#' @param hawkes A `hawkes` object
-#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
-#' @param B number of bootstrap iterations
-#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
-#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
-#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
-#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
+#' @param hawkes A `hawkes` object.
+#' @param est A `hawkes_est` object with parameter estimates for `hawkes`.
+#' @param B Number of bootstrap iterations.
+#' @param alpha Type I error rate for the interval. Defaults to 0.05.
+#' @param parallel Logical flag for `furrr` based parallel computation.
+#' @param max_iters Maximum EM iterations per fit. Defaults to 500.
+#' @param boundary Optional boundary width used for edge correction.
 #'
-#' @returns A `hawkes` object.
+#' @returns A tibble of bootstrap estimates.
 #' @export
 #'
 #' @examples
-#' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .25),temporal = list(rate = 2), fixed = list(spatial = "mean"))
+#' params <- list(
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   triggering_rate = 0.5,
+#'   spatial = list(mean = 0, sd = 0.25),
+#'   temporal = list(rate = 2),
+#'   fixed = list(spatial = "mean")
+#' )
 #' data("example_background_covariates")
-#' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 1)
+#' hawkes <- rHawkes(
+#'   params,
+#'   c(0, 50),
+#'   example_background_covariates,
+#'   covariate_columns = c("X1", "X2"),
+#'   spatial_burnin = 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
 #' future::plan(future::multisession, workers = future::availableCores())

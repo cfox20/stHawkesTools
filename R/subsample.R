@@ -1,16 +1,21 @@
 #' Resample data with moving blocls
 #'
-#' @param hawkes A `hawkes` object
-#' @param length A numeric value to set the length of the subsample.
+#' @param hawkes A `hawkes` object.
+#' @param length Length of the temporal subsample.
 #'
 #' @returns A `hawkes` object.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' sample_subregion(hawkes, 25)
 #'
@@ -54,25 +59,30 @@ sample_subregion <- function(hawkes, length) {
               temporal_family = temporal_family)
 }
 
-#' Block Bootstrap for COnfidence Intervals of Hawkes MLEs
+#' Block bootstrap for Hawkes MLEs via subsampling
 #'
-#' @param hawkes A `hawkes` object
-#' @param est A `hawkes_est` object containing the parameter estimates of `hawkes`
-#' @param B number of bootstrap iterations
-#' @param length A numeric value to set the length of the subsample
-#' @param alpha type-1 error rate for constructing confidence intervals. Defaults to .05 if unused
-#' @param parallel a logical specifying if parallel computation should be used. Parallel computation is implemented with the `furrr` package.
-#' @param max_iters maximum number of iterations to use in maximum likelihood estimation. Defaults to 500 if unused.
-#' @param boundary size of boundary to use for border correction. Defaults to NULL if unused
+#' @param hawkes A `hawkes` object.
+#' @param est A `hawkes_est` object containing parameter estimates.
+#' @param B Number of bootstrap iterations.
+#' @param length Length of each temporal subsample.
+#' @param alpha Type I error rate for confidence intervals. Defaults to 0.05.
+#' @param parallel Logical flag for `furrr` based parallel computation.
+#' @param max_iters Maximum EM iterations per fit. Defaults to 500.
+#' @param boundary Optional boundary width used for edge correction.
 #'
-#' @returns A `hawkes` object.
+#' @returns A tibble of bootstrap estimates.
 #' @export
 #'
 #' @examples
-#' spatial_region <- create_rectangular_sf(0,10,0,10)
+#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region)
+#' params <- list(
+#'   background_rate = list(intercept = -4),
+#'   triggering_rate = 0.75,
+#'   spatial = list(mean = 0, sd = 0.75),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' subsample(hawkes, est, 5, 25, alpha = 0.05)
 subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL) {
