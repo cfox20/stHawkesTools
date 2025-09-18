@@ -12,7 +12,9 @@
 \arguments{
 \item{object}{a hawkes fit object to be summarized.}
 
+
 \item{level}{confidence level used when constructing confidence intervals; the printed coefficient headings match this level.}
+
 
 \item{digits}{minimum number of significant digits to display.}
 
@@ -27,7 +29,9 @@ summary, and the confidence level used.
 \description{
 Summarizes a fitted Hawkes model by reporting parameter estimates with Wald confidence
 intervals and basic residual diagnostics.
+
 }
 \note{
 Wald confidence intervals are known to undercover; bootstrap-based intervals are recommended for inference.
+
 }

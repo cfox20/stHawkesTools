@@ -141,6 +141,7 @@ print.hawkes_fit <- function(x, ...) {
 }
 
 
+
 #' Summarize a hawkes fit object
 #' 
 #' @param object a hawkes fit object to be summarized.
@@ -156,6 +157,7 @@ print.hawkes_fit <- function(x, ...) {
 #'
 #' @export
 #' 
+
 summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...) {
   if (!inherits(object, "hawkes_fit")) {
     stop("`object` must be a `hawkes_fit`.")
@@ -218,6 +220,7 @@ summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption(
   conf_df <- conf_df[order_idx, , drop = FALSE]
   row_labels <- row_labels[order_idx]
 
+
   interval_cols <- colnames(conf_df)[!(colnames(conf_df) %in% c("Variable", "Estimate", "std_error"))]
   if (length(interval_cols) != 2) {
     stop("Confidence interval table must contain exactly two interval columns.")
@@ -225,6 +228,7 @@ summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption(
 
   coef_mat <- as.matrix(conf_df[, c("Estimate", "std_error", interval_cols)])
   colnames(coef_mat) <- c("Estimate", "Std. Error", interval_cols)
+
   rownames(coef_mat) <- row_labels
 
   n_obs <- NA_integer_
