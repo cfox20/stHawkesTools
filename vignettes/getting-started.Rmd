@@ -14,16 +14,203 @@ knitr::opts_chunk$set(
 )
 ```
 
-`stHawkesTools` is a package made to simplify the analysis of spatio
+The `stHawkesTools` package provides utilities for simulating, fitting, and
+summarising spatio-temporal Hawkes processes.  This vignette walks through a
+complete analysis workflow:
+
+1. define the spatial domain and model parameters;
+2. simulate a Hawkes process;
+3. estimate the model with maximum likelihood;
+4. quantify uncertainty via the cluster bootstrap; and
+5. visualise the resulting point pattern.
+
+Throughout we focus on the default isotropic Gaussian spatial kernel and the
+exponential temporal kernel supplied with the package.
+
+## Installation
+
+The development version of `stHawkesTools` is hosted on GitHub.  Install it
+with `remotes::install_github()` (or the equivalent `devtools::install_github()`)
+before working through this vignette.
+
+```{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("cfox20/stHawkesTools")
+```
+
+## Setup
 
 ```{r setup}
 library(stHawkesTools)
+set.seed(123)
 ```
 
-```{r}
-spatial_region <- create_rectangular_sf(0,10,0,10)
+## Defining a spatial region
 
-params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1)
+The simulation and estimation routines operate on `sf` polygons that describe
+where events may occur.  The helper `create_rectangular_sf()` builds a simple
+rectangular window by supplying the minimum and maximum `x` and `y`
+coordinates.
+
+```{r region}
+spatial_region <- create_rectangular_sf(
+  xmin = 0, xmax = 10,
+  ymin = 0, ymax = 10
+)
+
+spatial_region
 ```
 
+The object prints as an `sf` data frame; we can also plot the geometry to see
+the observation window.
+
+```{r region-plot, fig.width=5, fig.height=5}
+plot(sf::st_geometry(spatial_region),
+     col = "grey95", border = "grey40",
+     main = "Spatial observation window")
+```
+
+## Specifying model parameters
+
+A Hawkes model combines a log-linear background rate (for exogenous events) with
+self-excitation governed by the triggering kernel.  Parameters are supplied as a
+named list with entries for the background rate, triggering rate, and the
+parameters of the spatial and temporal kernels.  The background rate list can
+include regression coefficients if spatial covariates are present; in this
+example we use only an intercept term.
+
+```{r parameters}
+true_params <- list(
+  background_rate = list(intercept = -3.8),
+  triggering_rate = 0.6,
+  spatial   = list(mean = 0, sd = 0.45),
+  temporal  = list(rate = 1.5)
+)
+true_params
+```
+
+The intercept corresponds to a baseline log-intensity of roughly
+\(\exp(-3.8) \approx 0.022\) events per unit area per unit time, while the
+triggering rate controls how many offspring each event tends to generate.
+
+## Simulating a spatio-temporal Hawkes process
+
+With the region and parameter list defined we can simulate a point pattern using
+`rHawkes()`.  Here we generate events over the time window \([0, 40]\).
+
+```{r simulate}
+hawkes <- rHawkes(
+  params = true_params,
+  time_window = c(0, 40),
+  spatial_region = spatial_region,
+  spatial_burnin = 1
+)
+
+hawkes
+```
+
+The returned object is an `sf` tibble containing the event coordinates (`x`,
+`y`), occurrence times (`t`), and a geometry column.
+
+```{r head-events}
+head(sf::st_drop_geometry(hawkes))
+```
+
+## Visualising simulated events
+
+The convenience function `plot_hawkes()` produces `ggplot2` graphics coloured by
+either event time or whether the event is a background (immigrant) or triggered
+(descendant) event.  For simulated data the latter uses the known parentage
+structure from the generating process.
+
+```{r plot-time, fig.width=5.5, fig.height=5.5}
+plot_hawkes(hawkes, color = "time")
+```
+
+```{r plot-background, fig.width=5.5, fig.height=5.5}
+plot_hawkes(hawkes, color = "background")
+```
+
+Because `plot_hawkes()` returns a standard `ggplot2` object, further
+customisation is straightforward.
+
+```{r plot-custom, fig.width=5.5, fig.height=5.5}
+plot_hawkes(hawkes, color = "time") +
+  ggplot2::labs(title = "Simulated Hawkes process",
+                colour = "Event time") +
+  ggplot2::theme_minimal()
+```
+
+## Maximum likelihood estimation
+
+Parameter estimation uses the expectation–maximisation (EM) algorithm implemented
+in `hawkes_mle()`.  The function requires initial values in the same format as
+`rHawkes()`.  Providing reasonable starting values helps the algorithm converge
+quickly; here we perturb the true parameters slightly.
+
+```{r estimation}
+initial_values <- list(
+  background_rate = list(intercept = -3.5),
+  triggering_rate = 0.5,
+  spatial   = list(mean = 0, sd = 0.5),
+  temporal  = list(rate = 1.8)
+)
+
+est <- hawkes_mle(
+  hawkes,
+  inits = initial_values,
+  boundary = 0.5,
+  max_iters = 200
+)
+
+est
+```
+
+The returned `hawkes_fit` object stores the parameter estimates, fitted residuals
+and the original `hawkes` data.  The standard `summary()` method reports the
+point estimates alongside Wald standard errors and confidence intervals derived
+from the observed information matrix.
+
+```{r estimation-summary}
+summary(est)
+```
+
+A tidy data frame of confidence intervals is also available via `confint()`:
+
+```{r estimation-confint}
+confint(est)
+```
+
+## Uncertainty assessment with the cluster bootstrap
+
+Spatial-temporal clustering can produce highly skewed sampling distributions for
+MLEs.  The cluster bootstrap repeatedly resamples whole estimated clusters and
+re-estimates the model, capturing this dependence structure.  The
+`cluster_bootstrap()` function requires the fitted `hawkes` object, the
+corresponding `hawkes_fit`, and the number of bootstrap replications `B`.
+
+```{r bootstrap}
+boot_results <- cluster_bootstrap(
+  hawkes = hawkes,
+  est = est,
+  B = 50,
+  alpha = 0.05,
+  boundary = 0.5,
+  max_iters = 200
+)
+
+boot_results
+```
+
+Each row contains the bootstrap median, percentile-based interval, estimated
+standard deviation, and the proportion of bootstrap fits that failed to converge
+(if any).  Larger `B` yields smoother estimates at the cost of additional
+computation; parallel processing is available by setting `parallel = TRUE` after
+configuring a `future` plan.
+
+## Next steps
+
+This introductory example highlights the core workflow supported by
+`stHawkesTools`.  Further functionality includes subsampling utilities, residual
+analysis, and tools for working with covariate surfaces.  Consult the package
+reference documentation for details on these advanced capabilities.
