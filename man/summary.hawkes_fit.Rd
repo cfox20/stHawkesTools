@@ -2,15 +2,32 @@
 % Please edit documentation in R/hawkes_fit.R
 \name{summary.hawkes_fit}
 \alias{summary.hawkes_fit}
-\title{Print hawkes fit object}
+\alias{print.summary.hawkes_fit}
+\title{Summarize a hawkes fit object}
 \usage{
-\method{summary}{hawkes_fit}(object, ...)
+\method{summary}{hawkes_fit}(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...)
+
+\method{print}{summary.hawkes_fit}(x, digits = x$digits, ...)
 }
 \arguments{
-\item{object}{a hawkes fit object to be printed}
+\item{object}{a hawkes fit object to be summarized.}
 
-\item{...}{Further arguments passed to or from other methods.}
+\item{level}{confidence level used when constructing confidence intervals; the printed coefficient headings match this level.}
+
+\item{digits}{minimum number of significant digits to display.}
+
+\item{...}{further arguments passed to or from other methods.}
+
+\item{x}{an object of class \code{summary.hawkes_fit}.}
+}
+\value{
+An object of class \code{summary.hawkes_fit} containing the coefficient table, residual
+summary, and the confidence level used.
 }
 \description{
-Print hawkes fit object
+Summarizes a fitted Hawkes model by reporting parameter estimates with Wald confidence
+intervals and basic residual diagnostics.
+}
+\note{
+Wald confidence intervals are known to undercover; bootstrap-based intervals are recommended for inference.
 }

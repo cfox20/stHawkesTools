@@ -10,11 +10,12 @@ new_hawkes_fit <- function(hawkes, est) {
 
   structure(
     list(
+      est = est,
       estimate = est,
+      hawkes = hawkes,
       hawkes_object = hawkes,
       residuals = time_scaled_residuals(hawkes, est)
     ),
-    # est,
     class = c("hawkes_fit", class(est))
   )
 }
@@ -29,8 +30,8 @@ new_hawkes_fit <- function(hawkes, est) {
 #' @param level Confidence level for the interval. Default is 0.95.
 #' @param ... Additional arguments passed to other methods.
 #'
-#' @return A tibble with point estimates and lower/upper bounds using `confint()` style
-#'   column names.
+#' @return A tibble with point estimates, standard errors, and interval bounds labeled
+#'   according to the requested confidence level.
 #'
 #' @details Fixed parameters, if any, are excluded when computing intervals.
 #'
@@ -72,9 +73,9 @@ new_hawkes_fit <- function(hawkes, est) {
 #' est <- hawkes_mle(hawkes, inits = params)
 #' confint(est)
 confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
-  hawkes <- object$hawkes
+  hawkes <- if (!is.null(object$hawkes_object)) object$hawkes_object else object$hawkes
 
-  est <- object$est
+  est <- if (!is.null(object$estimate)) object$estimate else object$est
 
   alpha <- 1 - level
 
@@ -89,16 +90,21 @@ confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
 
   z <- -stats::qnorm((alpha)/2)
 
-  lower_name <- paste0(formatC(100 * alpha / 2, format = "f", digits = 1), " %")
-  upper_name <- paste0(formatC(100 * (1 - alpha / 2), format = "f", digits = 1), " %")
+  lower_name <- sprintf("%s %%", formatC(100 * alpha / 2, format = "f", digits = 1))
+  upper_name <- sprintf("%s %%", formatC(100 * (1 - alpha / 2), format = "f", digits = 1))
 
-  tibble::tibble(
+  out <- tibble::tibble(
     Variable = names(est_vec),
     Estimate = est_vec,
     std_error = sqrt(diag(cov_est)),
     Lower = est_vec - z * sqrt(diag(cov_est)),
     Upper = est_vec + z * sqrt(diag(cov_est))
   )
+
+  names(out)[names(out) == "Lower"] <- lower_name
+  names(out)[names(out) == "Upper"] <- upper_name
+
+  out
 }
 
 
@@ -112,7 +118,7 @@ confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
 #' @export
 #'
 print.hawkes_fit <- function(x, ...) {
-  est <- x$est
+  est <- if (!is.null(x$estimate)) x$estimate else x$est
   cat("Triggering Parameter Estimates:\n")
 
   cat("Background Rate (\u03B2):   \n")
@@ -135,35 +141,129 @@ print.hawkes_fit <- function(x, ...) {
 }
 
 
-#' Print hawkes fit object
-#'
-#' @param object a hawkes fit object to be printed
+#' Summarize a hawkes fit object
+#' 
+#' @param object a hawkes fit object to be summarized.
+#' @param level Confidence level used for interval estimates; the coefficient table
+#'   headings match this level. Default is 0.95.
+#' @param digits Minimum number of significant digits to print.
 #' @param ... Further arguments passed to or from other methods.
 #'
-#' @export
+#' @return An object of class `summary.hawkes_fit` containing the coefficient table,
+#'   residual summary, and the confidence level used.
+#' @note Wald confidence intervals are known to undercover; bootstrap-based intervals are
+#'   recommended for inference.
 #'
-summary.hawkes_fit <- function(object, ...){
-  conf_int <- confint(object)
+#' @export
+#' 
+summary.hawkes_fit <- function(object, level = 0.95, digits = max(3L, getOption("digits") - 3L), ...) {
+  if (!inherits(object, "hawkes_fit")) {
+    stop("`object` must be a `hawkes_fit`.")
+  }
 
-  cat("Background Coefficients:\n")
-  conf_int |>
-    dplyr::filter(stringr::str_detect(.data$Variable, "^background_rate")) |>
-    dplyr::mutate(Variable = stringr::str_remove(.data$Variable, "^background_rate.")) |>
-    dplyr::rename(Coefficient = .data$Variable,
-                  `Std. Error` = .data$std_error,
-                  `95% Lower Bound` = .data$Lower,
-                  `95% Upper Bound` = .data$Upper) |>
-    print()
-  cat("\n")
-  cat("Trigering Coefficients:\n")
-  conf_int |>
-    dplyr::filter(!stringr::str_detect(.data$Variable, "^background_rate")) |>
-    dplyr::mutate(Variable = stringr::str_remove(.data$Variable, "^background_rate.")) |>
-    dplyr::rename(Coefficient = .data$Variable,
-                  `Std. Error` = .data$std_error,
-                  `95% Lower Bound` = .data$Lower,
-                  `95% Upper Bound` = .data$Upper) |>
-    print()
+  est <- if (!is.null(object$estimate)) object$estimate else object$est
+
+  if (is.null(est)) {
+    stop("Hawkes fit object does not contain parameter estimates.")
+  }
+
+  conf_tbl <- confint(object, level = level, ...)
+
+  if (is.null(object$residuals) && !is.null(object$hawkes_object)) {
+    residuals <- time_scaled_residuals(object$hawkes_object, est)
+  } else {
+    residuals <- object$residuals
+  }
+
+  if (!is.null(residuals)) {
+    residual_summary <- stats::quantile(residuals, probs = c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+    names(residual_summary) <- c("Min", "1Q", "Median", "3Q", "Max")
+  } else {
+    residual_summary <- NULL
+  }
+
+  warning(
+    "Wald confidence intervals are known to undercover; bootstrap-based intervals are recommended.",
+    call. = FALSE
+  )
+
+  conf_df <- as.data.frame(conf_tbl)
+
+  parts <- stringr::str_split_fixed(conf_df$Variable, "\\.", 2)
+
+  component_raw <- parts[, 1]
+  term_raw <- ifelse(parts[, 2] == "", parts[, 1], parts[, 2])
+
+  label_fun <- function(x) {
+    tools::toTitleCase(gsub("_", " ", x, fixed = TRUE))
+  }
+
+  row_labels <- ifelse(
+    component_raw == term_raw,
+    label_fun(component_raw),
+    paste(label_fun(component_raw), label_fun(term_raw), sep = ": ")
+  )
+
+  component_levels <- c("background_rate", "triggering_rate", "spatial", "temporal")
+  component_rank <- match(component_raw, component_levels)
+  if (any(is.na(component_rank))) {
+    next_rank <- max(component_rank, na.rm = TRUE)
+    if (!is.finite(next_rank)) {
+      next_rank <- 0
+    }
+    component_rank[is.na(component_rank)] <- next_rank + seq_len(sum(is.na(component_rank)))
+  }
+
+  order_idx <- order(component_rank, row_labels)
+  conf_df <- conf_df[order_idx, , drop = FALSE]
+  row_labels <- row_labels[order_idx]
+
+  interval_cols <- colnames(conf_df)[!(colnames(conf_df) %in% c("Variable", "Estimate", "std_error"))]
+  if (length(interval_cols) != 2) {
+    stop("Confidence interval table must contain exactly two interval columns.")
+  }
+
+  coef_mat <- as.matrix(conf_df[, c("Estimate", "std_error", interval_cols)])
+  colnames(coef_mat) <- c("Estimate", "Std. Error", interval_cols)
+  rownames(coef_mat) <- row_labels
+
+  n_obs <- NA_integer_
+  if (!is.null(object$hawkes_object)) {
+    n_obs <- nrow(object$hawkes_object)
+  } else if (!is.null(object$hawkes)) {
+    n_obs <- nrow(object$hawkes)
+  }
+
+  out <- list(
+    coefficients = coef_mat,
+    conf.level = level,
+    residual_summary = residual_summary,
+    digits = digits,
+    n = n_obs
+  )
+
+  class(out) <- "summary.hawkes_fit"
+  out
+}
+
+#' @rdname summary.hawkes_fit
+#' @export
+print.summary.hawkes_fit <- function(x, digits = x$digits, ...) {
+  if (!is.null(x$n) && is.finite(x$n)) {
+    cat(sprintf("Number of events: %s\n\n", x$n))
+  }
+
+  if (!is.null(x$residual_summary)) {
+    cat("Residuals:\n")
+    print.default(x$residual_summary, digits = digits)
+    cat("\n")
+  }
+
+  cat("Coefficients:\n")
+  stats::printCoefmat(x$coefficients, digits = digits, has.Pvalue = FALSE)
+  cat(sprintf("\nConfidence level used: %.1f%%\n", 100 * x$conf.level))
+
+  invisible(x)
 }
 #
 
