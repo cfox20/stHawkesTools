@@ -35,7 +35,7 @@ before working through this vignette.
 
 ```{r install, eval = FALSE}
 # install.packages("remotes")
-remotes::install_github("cfox20/stHawkesTools")
+# remotes::install_github("cfox20/stHawkesTools")
 ```
 
 ## Setup
@@ -172,7 +172,7 @@ point estimates alongside Wald standard errors and confidence intervals derived
 from the observed information matrix.
 
 ```{r estimation-summary}
-summary(est)
+# summary(est)
 ```
 
 A tidy data frame of confidence intervals is also available via `confint()`:
@@ -193,7 +193,7 @@ corresponding `hawkes_fit`, and the number of bootstrap replications `B`.
 boot_results <- cluster_bootstrap(
   hawkes = hawkes,
   est = est,
-  B = 50,
+  B = 3,
   alpha = 0.05,
   boundary = 0.5,
   max_iters = 200
