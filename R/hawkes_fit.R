@@ -24,14 +24,18 @@ new_hawkes_fit <- function(hawkes, est) {
 #' Computes Wald marginal confidence intervals for the parameters of a spatio-temporal Hawkes process
 #' using the estimated covariance matrix from the observed information (negative Hessian).
 #'
-#' @param hawkes_fit A `hawkes_fit` object
-#' @param conf_level Confidence level for the interval. Default is 0.95.
+#' @param object A `hawkes_fit` object
+#' @param parm Parameters to create confidence interval for. (currently not used)
+#' @param level Confidence level for the interval. Default is 0.95.
+#' @param ... Further arguments passed to or from other methods.
 #'
 #' @return A data frame with the point estimates and corresponding lower and upper confidence bounds.
 #' The column names match the default format of `confint()`, e.g., `"2.5 %"`, `"97.5 %"`.
 #'
 #' @details The function uses the estimated Hessian of the log-likelihood to compute the covariance matrix.
 #' Fixed parameters (if any) are excluded from the interval computation.
+#'
+#' @importFrom stats confint
 #'
 #' @seealso [hessian_est()], [confint()]
 #' @export
@@ -51,12 +55,12 @@ new_hawkes_fit <- function(hawkes, est) {
 #' hawkes <- rHawkes(params, c(0,50), example_background_covariates, covariate_columns = c("X1", "X2"), spatial_burnin = 0)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' confint(est)
-confint.hawkes_fit <- function(hawkes_fit, conf_level = 0.95) {
-  hawkes <- hawkes_fit$hawkes
+confint.hawkes_fit <- function(object, parm = NULL, level = 0.95, ...) {
+  hawkes <- object$hawkes
 
-  est <- hawkes_fit$est
+  est <- object$est
 
-  alpha <- 1 - conf_level
+  alpha <- 1 - level
 
   # if (method == "rathbun") {
   #   cov_mat <- rathbun_est(hawkes, est, X)
@@ -67,7 +71,7 @@ confint.hawkes_fit <- function(hawkes_fit, conf_level = 0.95) {
 
   est_vec <- .flatten_free_params(est)
 
-  z <- -qnorm((alpha)/2)
+  z <- -stats::qnorm((alpha)/2)
 
   lower_name <- paste0(formatC(100 * alpha / 2, format = "f", digits = 1), " %")
   upper_name <- paste0(formatC(100 * (1 - alpha / 2), format = "f", digits = 1), " %")
@@ -86,11 +90,12 @@ confint.hawkes_fit <- function(hawkes_fit, conf_level = 0.95) {
 #' Print hawkes fit object
 #'
 #' @param x a hawkes fit object to be printed
+#' @param ... Further arguments passed to or from other methods.
 #'
 #' @returns The input hawkes fit object, invisibly.
 #' @export
 #'
-print.hawkes_fit <- function(x) {
+print.hawkes_fit <- function(x, ...) {
   est <- x$est
   cat("Triggering Parameter Estimates:\n")
 
@@ -116,31 +121,32 @@ print.hawkes_fit <- function(x) {
 
 #' Print hawkes fit object
 #'
-#' @param fit a hawkes fit object to be printed
+#' @param object a hawkes fit object to be printed
+#' @param ... Further arguments passed to or from other methods.
 #'
 #' @export
 #'
-summary.hawkes_fit <- function(fit){
-  conf_int <- confint(fit)
+summary.hawkes_fit <- function(object, ...){
+  conf_int <- confint(object)
 
   cat("Background Coefficients:\n")
   conf_int |>
-    dplyr::filter(stringr::str_detect(Variable, "^background_rate")) |>
-    dplyr::mutate(Variable = stringr::str_remove(Variable, "^background_rate.")) |>
-    dplyr::rename(Coefficient = Variable,
-                  `Std. Error` = std_error,
-                  `95% Lower Bound` = Lower,
-                  `95% Upper Bound` = Upper) |>
+    dplyr::filter(stringr::str_detect(.data$Variable, "^background_rate")) |>
+    dplyr::mutate(Variable = stringr::str_remove(.data$Variable, "^background_rate.")) |>
+    dplyr::rename(Coefficient = .data$Variable,
+                  `Std. Error` = .data$std_error,
+                  `95% Lower Bound` = .data$Lower,
+                  `95% Upper Bound` = .data$Upper) |>
     print()
   cat("\n")
   cat("Trigering Coefficients:\n")
   conf_int |>
-    dplyr::filter(!stringr::str_detect(Variable, "^background_rate")) |>
-    dplyr::mutate(Variable = stringr::str_remove(Variable, "^background_rate.")) |>
-    dplyr::rename(Coefficient = Variable,
-                  `Std. Error` = std_error,
-                  `95% Lower Bound` = Lower,
-                  `95% Upper Bound` = Upper) |>
+    dplyr::filter(!stringr::str_detect(.data$Variable, "^background_rate")) |>
+    dplyr::mutate(Variable = stringr::str_remove(.data$Variable, "^background_rate.")) |>
+    dplyr::rename(Coefficient = .data$Variable,
+                  `Std. Error` = .data$std_error,
+                  `95% Lower Bound` = .data$Lower,
+                  `95% Upper Bound` = .data$Upper) |>
     print()
 }
 #

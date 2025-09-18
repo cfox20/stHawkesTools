@@ -29,7 +29,23 @@ time_scaled_residuals <- function(hawkes, est) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   if (class(est)[1] == "hawkes_fit") {
     est <- est$est
@@ -42,7 +58,7 @@ time_scaled_residuals <- function(hawkes, est) {
 
   background_rate <- as.numeric(background_rate)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
+  if(is.null(covariate_columns)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
     X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
@@ -69,10 +85,10 @@ time_scaled_residuals <- function(hawkes, est) {
   w <- hawkes$t - dplyr::lag(hawkes$t, default = time_window[1])
 
   # Store integral of background rate
-  if (exists("covariate_columns", inherits = FALSE)) {
+  if (!is.null(covariate_columns)) {
     cov_df <- spatial_region |>
       sf::st_drop_geometry() |>
-      dplyr::select(dplyr::all_of(c(covariate_columns, "area")))
+      dplyr::select(tidyselect::all_of(c(covariate_columns, "area")))
 
     X_mat <- cbind(1, as.matrix(cov_df[covariate_columns]))
     eta   <- drop(X_mat %*% background_rate)

@@ -58,7 +58,7 @@ est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 
 future::plan(future::multisession, workers = future::availableCores())
 
-parametric_bootstrap(hawkes, est, B = 5, parallel = TRUE, boundary = c(.5,3))
+parametric_bootstrap(hawkes, est, B = 2, parallel = TRUE, boundary = c(.5,3))
 
 future::plan(future::sequential)
 }

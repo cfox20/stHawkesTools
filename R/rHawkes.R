@@ -72,8 +72,8 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
                      parent = 0,
                      gen = 0,
                      family = 1:num_events) |>
-      dplyr::relocate(t, .after = y) |>
-      dplyr::arrange(t)
+      dplyr::relocate(.data$t, .after = .data$y) |>
+      dplyr::arrange(.data$t)
 
   } else{
     X <- spatial_region |>
@@ -103,7 +103,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
         parent = 0,
         gen = 0,
         family = 1:sum(num_events)) |>
-      dplyr::relocate(t, .after = y) |>
+      dplyr::relocate(t, .after = .data$y) |>
       dplyr::arrange(t)
   }
 
@@ -132,7 +132,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' spatial_region <- create_rectangular_sf(0,10,0,10)
 #'
 #' params <- list(background_rate = list(intercept = -4),triggering_rate = 0.75,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2))
-#' rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1)
+#' (hawkes <- rHawkes(params, time_window = c(0,50), spatial_region = spatial_region, spatial_burnin = 1))
 #'
 #' params <- list(background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),triggering_rate = 0.5,spatial = list(mean = 0, sd = .75),temporal = list(rate = 2), fixed = list(spatial = "mean"))
 #' data("example_background_covariates")
@@ -141,9 +141,21 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
                     temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
                     temporal_family = "Exponential", spatial_family = "Gaussian") {
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
-  hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
-         spatial_family = spatial_family, temporal_family = temporal_family) |>
-    .unpack_hawkes()
+  hawkes <- hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
+         spatial_family = spatial_family, temporal_family = temporal_family)
+
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
 
   # Check to see if covariates are included
@@ -167,7 +179,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
         sf::st_as_sf()
 
       spatial_region_burnin <- spatial_region |>
-        dplyr::select(dplyr::all_of(covariate_columns)) |>
+        dplyr::select(tidyselect::all_of(covariate_columns)) |>
         rbind(spatial_region_burnin |> dplyr::rename(geometry = x))
 
       spatial_region_burnin <- spatial_region_burnin |>
@@ -206,7 +218,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
   while (TRUE) {
     O <- hawkes(params = params, time_window = time_window_burnin, spatial_region = spatial_region_burnin,
                 spatial_family = spatial_family, temporal_family = temporal_family) |>
-      dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = t)
+      dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = .data$t)
     sf::st_crs(O) <- crs
 
     l <- l+1
@@ -226,7 +238,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
       if (covariates) {
         # Spatial join: assign covariates from polygon to each point
         data <- sf::st_join(data, spatial_region, join = sf::st_within) |>
-          dplyr::select(all_of(c(names(data), covariate_columns, "area")))
+          dplyr::select(tidyselect::all_of(c(names(data), covariate_columns, "area")))
       }
 
       data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,
@@ -272,7 +284,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
       dplyr::filter(t < time_window_burnin[2])
 
     O <- O |>
-      dplyr::relocate(t, id, .before = parent) |>
+      dplyr::relocate(.data$t, .data$id, .before = parent) |>
       dplyr::mutate(
         x = sf::st_coordinates(O)[,1],
         y = sf::st_coordinates(O)[,2],
@@ -293,7 +305,7 @@ rHawkes <- function(params, time_window, spatial_region, covariate_columns = NUL
       if (covariates) {
         # Spatial join: assign covariates from polygon to each point
         data <- sf::st_join(data, spatial_region, join = sf::st_within) |>
-          dplyr::select(all_of(c(names(data), covariate_columns, "area")))
+          dplyr::select(tidyselect::all_of(c(names(data), covariate_columns, "area")))
       }
 
       data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,

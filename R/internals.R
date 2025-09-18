@@ -1,14 +1,20 @@
-#' (Internal) Unpack all Attributes in Hawkes Object
-#'
-#' @param hawkes A hawkes object
-#'
-#' @returns Loads attributes to function environment
-#'
-#'
-.unpack_hawkes <- function(hawkes) {
-  list2env(as.list(hawkes), envir = parent.frame()) |> invisible()
-  list2env(attributes(hawkes), envir = parent.frame()) |> invisible()
-}
+# #' (Internal) Unpack all Attributes in Hawkes Object
+# #'
+# #' @param hawkes A hawkes object
+# #'
+# #' @returns Loads attributes to function environment
+# #'
+# #'
+# .unpack_hawkes <- function(hawkes) {
+#   env <- rlang::caller_env()
+#
+#   atts <- attributes(hawkes)
+#   keep <- setdiff(names(atts), c("class", "names", "row.names", "sf_column"))
+#   rlang::env_bind(env, !!!as.list(hawkes))
+#   rlang::env_bind(env, !!!atts[keep])
+#
+#   invisible(NULL)
+# }
 
 
 #' (Internal) Check to make sure necessary attributes are in the Hawkes object
@@ -142,7 +148,7 @@
     if (is.list(value)) {
       flat <- unlist(value)
     } else {
-      flat <- setNames(value, type)
+      flat <- stats::setNames(value, type)
     }
 
     tibble::tibble(

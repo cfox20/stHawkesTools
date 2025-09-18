@@ -25,20 +25,36 @@
 #'
 #' plot_hawkes(hawkes, color = "time")
 plot_hawkes <- function(hawkes, color = "time",...) {
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   if (color == "time") {
     plot <- ggplot2::ggplot() +
       ggplot2::geom_sf(data = spatial_region) +
-      ggplot2::geom_sf(data = hawkes, ggplot2::aes(color = t), ...) +
+      ggplot2::geom_sf(data = hawkes, ggplot2::aes(color = .data$t), ...) +
       ggplot2::labs(color = "Time")
   }
   if (color == "background") {
     plot <- ggplot2::ggplot() +
       ggplot2::geom_sf(data = spatial_region) +
       ggplot2::geom_sf(data = hawkes |>
-                         dplyr::mutate(background = factor(gen == 0, levels = c("TRUE", "FALSE"))),
-                       aes(color = background), ...) +
+                         dplyr::mutate(background = factor(.data$gen == 0, levels = c("TRUE", "FALSE"))),
+                       ggplot2::aes(color = .data$background), ...) +
       ggplot2::labs(color = "Background Event")
   }
   plot
@@ -85,9 +101,9 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
 
     plots$spatial <- spatial |>
       ggplot2::ggplot() +
-      ggplot2::geom_raster(ggplot2::aes(x, y, fill = intensity)) +
+      ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = .data$intensity)) +
       ggplot2::scale_fill_gradient(low = "white", high = "firebrick", limits = c(0, NA)) +
-      ggplot2::geom_point(data = dplyr::filter(hawkes, t < time), ggplot2::aes(x, y)) +
+      ggplot2::geom_point(data = dplyr::filter(hawkes, .data$t < time), ggplot2::aes(.data$x, .data$y)) +
       ggplot2::labs(x = "X", y = "Y", fill = "Intensity",
                     title = paste("Spatial Intensity at t =", time))
   }
@@ -97,7 +113,7 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
 
     plots$temporal <- temporal |>
       ggplot2::ggplot() +
-      ggplot2::geom_line(ggplot2::aes(t, intensity)) +
+      ggplot2::geom_line(ggplot2::aes(.data$t, .data$intensity)) +
       ggplot2::labs(x = "Time", y = "Conditional Intensity",
                     title = paste0("Temporal Intensity at (", coordinates[1], ", ", coordinates[2], ")"))
   }

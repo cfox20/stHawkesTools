@@ -31,7 +31,7 @@
 #'
 #' future::plan(future::multisession, workers = future::availableCores())
 #'
-#' parametric_bootstrap(hawkes, est, B = 5, parallel = TRUE, boundary = c(.5,3))
+#' parametric_bootstrap(hawkes, est, B = 2, parallel = TRUE, boundary = c(.5,3))
 #'
 #' future::plan(future::sequential)
 parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE, max_iters = 500,
@@ -40,7 +40,23 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   if (is.null(spatial_burnin)) {
     spatial_burnin <- sum(sf::st_area(spatial_region))^.25
@@ -55,8 +71,10 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
   boot_ests <- furrr::future_map_dfr(1:B, ~ tryCatch({
     sample <- rHawkes(est$est, time_window, spatial_region,
                       covariate_columns = covariate_columns,
-                      temporal_burnin = temporal_burnin, spatial_burnin = spatial_burnin,
-                      spatial_family = spatial_family, temporal_family = temporal_family)
+                      temporal_burnin = temporal_burnin,
+                      spatial_burnin = spatial_burnin,
+                      spatial_family = spatial_family,
+                      temporal_family = temporal_family)
 
     # Estimate the parameters on each bootstrapped sample and transform to long tibble
     boot_est <- hawkes_mle(sample, inits = est$est, boundary = boundary, max_iters = max_iters)
@@ -111,13 +129,13 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
 
   boot_ests |>
     tidyr::drop_na() |>
-    dplyr::group_by(parameter_type, parameter) |>
+    dplyr::group_by(.data$parameter_type, .data$parameter) |>
     dplyr::summarise(
-              boot_est_median = median(value),
-              lower = quantile(value, alpha/2),
-              upper = quantile(value, 1-(alpha/2)),
-              width = upper - lower,
-              sd = sd(value)) |>
+              boot_est_median = stats::median(.data$value),
+              lower = stats::quantile(.data$value, .env$alpha/2),
+              upper = stats::quantile(.data$value, 1-(.env$alpha/2)),
+              width = .data$upper - .data$lower,
+              sd = stats::sd(.data$value)) |>
     dplyr::ungroup() |>
     dplyr::mutate(
       percent_failed = n_failed / B

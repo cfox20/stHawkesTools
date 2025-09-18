@@ -13,7 +13,7 @@ ppower_law(q, shape = 2, scale = 1, lower.tail = TRUE)
 
 \item{scale}{scale parameter for the Lomax distribution}
 
-\item{lower.tail}{logical; if TRUE (default), probabilities are $P\link{X< x}$ otherwise, $P\link{X>x}$.}
+\item{lower.tail}{logical}
 }
 \value{
 a numeric vector of cumulative probabilities at each value of q

@@ -22,11 +22,27 @@
 #' @returns The negative log-likelihood contribution of the spatial triggering parameters.
 #' @keywords internal
 .spatial_parameter_likelihood <- function(p, hawkes, parent_est_mat, x_diff, y_diff) {
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   -sum({parent_est_mat *
-      (.safe_log(do.call(spatial_pdf, c(list(x = x_diff), p))) +
-         .safe_log(do.call(spatial_pdf, c(list(x = y_diff), p))))
+      (.safe_log(do.call(.env$spatial_pdf, c(list(x = .env$x_diff), p))) +
+         .safe_log(do.call(.env$spatial_pdf, c(list(x = .env$y_diff), p))))
   })
 }
 
@@ -43,12 +59,28 @@
 #' @returns The negative log-likelihood contribution of the temporal triggering parameters.
 #' @keywords internal
 .temporal_parameter_likelihood <- function(p, hawkes, parent_est_mat, time_diff, triggering_rate) {
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   tryCatch(-{sum(parent_est_mat *
-          .safe_log(do.call(temporal_pdf, c(list(x = time_diff), p)))) -
+          .safe_log(do.call(.env$temporal_pdf, c(list(x = .env$time_diff), p)))) -
       triggering_rate *
-      sum(do.call(temporal_cdf, c(list(q = time_window[2] - hawkes$t), p)))},
+      sum(do.call(.env$temporal_cdf, c(list(q = .env$time_window[2] - .env$hawkes$t), .env$p)))},
     error = function(e){
       stop(paste("Error in temporal parameter optimization:", e$message, "\n Last parameter values: ", p, "\n"))
     })
@@ -85,7 +117,7 @@
     )
   }
 
-  opt <- optim(par = par_vec, fn = wrapped_fn, method = "BFGS")
+  opt <- stats::optim(par = par_vec, fn = wrapped_fn, method = "BFGS")
 
   if (opt$convergence != 0) {
     warning(sprintf("Optimization did not converge for %s: %s", component, opt$message))
@@ -103,7 +135,7 @@ background_covariates_function <- function(background_rate, hawkes, parent_est_m
   # Make matrix of background covariate values for each region
   cov_map_X <- spatial_region |>
     sf::st_drop_geometry() |>
-    dplyr::select(all_of(covariate_columns)) |>
+    dplyr::select(tidyselect::all_of(covariate_columns)) |>
     as.matrix()
 
   cov_map_X <- cbind(1, cov_map_X)

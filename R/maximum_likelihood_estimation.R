@@ -29,9 +29,25 @@ parent_est <- function(hawkes, parameters) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
+
+  if(is.null(covariate_columns)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
     X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
@@ -108,9 +124,25 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
+
+  if(is.null(covariate_columns)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
     X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
@@ -242,7 +274,23 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   background_rate <- inits$background_rate
   triggering_rate <- inits$triggering_rate

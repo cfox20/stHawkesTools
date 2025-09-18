@@ -4,10 +4,12 @@
 \alias{summary.hawkes_fit}
 \title{Print hawkes fit object}
 \usage{
-\method{summary}{hawkes_fit}(fit)
+\method{summary}{hawkes_fit}(object, ...)
 }
 \arguments{
-\item{fit}{a hawkes fit object to be printed}
+\item{object}{a hawkes fit object to be printed}
+
+\item{...}{Further arguments passed to or from other methods.}
 }
 \description{
 Print hawkes fit object

@@ -4,10 +4,12 @@
 \alias{print.hawkes_fit}
 \title{Print hawkes fit object}
 \usage{
-\method{print}{hawkes_fit}(x)
+\method{print}{hawkes_fit}(x, ...)
 }
 \arguments{
 \item{x}{a hawkes fit object to be printed}
+
+\item{...}{Further arguments passed to or from other methods.}
 }
 \value{
 The input hawkes fit object, invisibly.

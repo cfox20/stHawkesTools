@@ -19,7 +19,23 @@ sample_subregion <- function(hawkes, length) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   sub_samp_t <- runif(1, time_window[1], time_window[2] - length)
 
@@ -64,9 +80,25 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
+
+  if(!is.null(covariate_columns)){
     X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
   } else {
     X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry()) |>
@@ -94,7 +126,7 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters
         dplyr::mutate(value = NA,
                       B = .x)
 
-    }), .options = furrr::furrr_options(seed = !is.null(seed)), .progress = TRUE, packages = "stHawkesTools")
+    }), .options = furrr::furrr_options(seed = TRUE), .progress = TRUE, packages = "stHawkesTools")
 
   } else{
     boot_samples <- purrr::map(1:B, ~ {
@@ -129,12 +161,12 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters
 
   boot_ests |>
     tidyr::drop_na() |>
-    dplyr::group_by(parameter_type, parameter) |>
-    dplyr::summarise(subsamp_est_median = median(value),
-                     lower = quantile(value, alpha/2),
-                     upper = quantile(value, 1-(alpha/2)),
-                     width = upper - lower,
-                     sd = sd(value)) |>
+    dplyr::group_by(.data$parameter_type, .data$parameter) |>
+    dplyr::summarise(subsamp_est_median = stats::median(.data$value),
+                     lower = stats::quantile(.data$value, alpha/2),
+                     upper = stats::quantile(.data$value, 1-(alpha/2)),
+                     width = .data$upper - .data$lower,
+                     sd = stats::sd(.data$value)) |>
     dplyr::ungroup() |>
     dplyr::mutate(
       percent_failed = n_failed / B

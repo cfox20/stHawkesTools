@@ -4,12 +4,16 @@
 \alias{confint.hawkes_fit}
 \title{Wald Confidence Intervals for Hawkes Model Parameters}
 \usage{
-\method{confint}{hawkes_fit}(hawkes_fit, conf_level = 0.95)
+\method{confint}{hawkes_fit}(object, parm = NULL, level = 0.95, ...)
 }
 \arguments{
-\item{hawkes_fit}{A \code{hawkes_fit} object}
+\item{object}{A \code{hawkes_fit} object}
 
-\item{conf_level}{Confidence level for the interval. Default is 0.95.}
+\item{parm}{Parameters to create confidence interval for. (currently not used)}
+
+\item{level}{Confidence level for the interval. Default is 0.95.}
+
+\item{...}{Further arguments passed to or from other methods.}
 }
 \value{
 A data frame with the point estimates and corresponding lower and upper confidence bounds.

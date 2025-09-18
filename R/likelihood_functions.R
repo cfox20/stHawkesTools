@@ -21,7 +21,23 @@ conditional_intensity <- function(hawkes, parameters) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   background_rate <- parameters$background_rate
   triggering_rate <- parameters$triggering_rate
@@ -100,9 +116,25 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
+
+  if(!is.null(covariate_columns)){
     covariate_columns <- NULL
   }
 
@@ -121,7 +153,7 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 
   X <- point_grid |>
     sf::st_drop_geometry() |>
-    dplyr::select(all_of(covariate_columns))
+    dplyr::select(tidyselect::all_of(covariate_columns))
 
   X <- cbind(1,X) |>
     as.matrix()
@@ -189,7 +221,23 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   x <- coordinates[1]
   y <- coordinates[2]
@@ -231,11 +279,11 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   } else{
     X <- sf::st_as_sf(data.frame(t(coordinates)), coords = c("X1", "X2"), crs = sf::st_crs(spatial_region)) |>
       sf::st_join(spatial_region, join = sf::st_intersects) |>
-      dplyr::mutate(.wkt = sf::st_as_text(geometry)) |>
-      dplyr::distinct(.wkt, .keep_all = TRUE) |>
-      dplyr::select(-.wkt) |>
+      dplyr::mutate(.wkt = sf::st_as_text(.data$geometry)) |>
+      dplyr::distinct(.data$.wkt, .keep_all = TRUE) |>
+      dplyr::select(-.data$.wkt) |>
       sf::st_drop_geometry() |>
-      dplyr::select(all_of(covariate_columns)) |>
+      dplyr::select(tidyselect::all_of(covariate_columns)) |>
       as.matrix()
     X <- cbind(1, X)
   }
@@ -273,7 +321,23 @@ log_likelihood <- function(hawkes, parameters) {
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   background_rate <- parameters$background_rate |> as.numeric()
   triggering_rate <- parameters$triggering_rate
@@ -291,10 +355,10 @@ log_likelihood <- function(hawkes, parameters) {
   log_part <- sum(log_lambda)
 
   # Background integral (spatial + temporal)
-  if (exists("covariate_columns", inherits = FALSE)) {
+  if(!is.null(covariate_columns)){
     covariate_map <- spatial_region |>
       sf::st_drop_geometry() |>
-      dplyr::select(dplyr::all_of(covariate_columns)) |>
+      dplyr::select(tidyselect::all_of(covariate_columns)) |>
       as.matrix()
     covariate_map <- cbind(1, covariate_map)
     area <- spatial_region$area |> as.numeric()

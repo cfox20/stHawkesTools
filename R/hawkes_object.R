@@ -54,7 +54,7 @@ hawkes <- function(data = NULL, params = NULL,
   }
 
   # Assign Kernel Density and Sampler Functions -----------------------------------------
-  if (!is.null(spatial_family) && class(spatial_family) == "character") {
+  if (!is.null(spatial_family) && class(spatial_family)[1] == "character") {
     spatial_pdf <- switch (spatial_family,
                            "Gaussian" = stats::dnorm,
                            "Uniform" = stats::dunif,
@@ -80,7 +80,7 @@ hawkes <- function(data = NULL, params = NULL,
     }
   } else {
     message("Custom spatial kernel is being used\nEnsure the provided list includes a pdf, cdf, sampling function with the correct structure, and a variable specifying if the triggering intensity is separable. (Add help)")
-    if (class(spatial_family) == "list") {
+    if (class(spatial_family)[1] == "list") {
       spatial_pdf <- spatial_family$pdf
       spatial_cdf <- spatial_family$cdf
       spatial_sampler <- spatial_family$sampler
@@ -89,7 +89,7 @@ hawkes <- function(data = NULL, params = NULL,
   }
 
   # Assign the appropriate sampling method for the specified spatial kernel function.
-  if (!is.null(temporal_family) && class(temporal_family) == "character") {
+  if (!is.null(temporal_family) && class(temporal_family)[1] == "character") {
     temporal_pdf <- switch (temporal_family,
                             "Exponential" = stats::dexp,
                             "Gamma" = stats::dgamma,
@@ -114,24 +114,24 @@ hawkes <- function(data = NULL, params = NULL,
   } else {
     # Add in support to provide all the custom functions in 1 list
     message("Custom temporal kernel is being used\nEnsure the provided list includes a pdf, cdf, and sampling fucntion with the correct structure. (Add help)")
-    if (class(spatial_family) == "list") {
+    if (class(spatial_family)[1] == "list") {
       temporal_pdf <- temporal_family$pdf
       temporal_cdf <- temporal_family$cdf
       temporal_sampler <- temporal_family$sampler
     }
   }
 
-  if (!is.null(params) && !all(names(params$spatial) %in% formalArgs(spatial_pdf))) {
+  if (!is.null(params) && !all(names(params$spatial) %in% methods::formalArgs(spatial_pdf))) {
     stop(paste("Spatial parameter names are missing in spatial density function arguments."))
   }
-  if (!is.null(params) && !all(names(params$temporal) %in% formalArgs(temporal_pdf))) {
+  if (!is.null(params) && !all(names(params$temporal) %in% methods::formalArgs(temporal_pdf))) {
     stop(paste("Spatial parameter names are missing in temporal density function arguments."))
   }
 
-  if (!is.null(params) && !all(names(params$spatial) %in% formalArgs(spatial_sampler))) {
+  if (!is.null(params) && !all(names(params$spatial) %in% methods::formalArgs(spatial_sampler))) {
     stop(paste("Spatial parameter names are missing in spatial sampler function arguments."))
   }
-  if (!is.null(params) && !all(names(params$temporal) %in% formalArgs(temporal_sampler))) {
+  if (!is.null(params) && !all(names(params$temporal) %in% methods::formalArgs(temporal_sampler))) {
     stop(paste("Spatial parameter names are missing in temporal sampler function arguments."))
   }
 

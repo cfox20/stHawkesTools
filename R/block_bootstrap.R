@@ -14,10 +14,25 @@
 #' extend_data_t_only(hawkes, 5)
 #'
 extend_data_t_only <- function(hawkes, block_length_t) {
-  time_window <- attr(hawkes, "time_window")
-  t_length <- time_window[2] - time_window[1]
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
+
+  t_length <- time_window[2] - time_window[1]
 
   # create dataframes to extend points to hand block wrapping
   first_block <- transform(hawkes[hawkes$t <= block_length_t,], t = t + t_length)
@@ -52,7 +67,23 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 #'
 sample_blocks <- function(hawkes, num_blocks) {
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   block_length <- (time_window[2] - time_window[1]) / num_blocks
   block_start <- runif(num_blocks, time_window[1], time_window[2])
@@ -105,7 +136,23 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = 
 
   .sanity_check(hawkes)
 
-  .unpack_hawkes(hawkes)
+  # Extract all hawkes object attributes
+  attrs <- attributes(hawkes)
+
+  # Assign all attributes to variables in the function environment
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  covariate_columns    <- attrs$covariate_columns
+  spatial_family    <- attrs$spatial_family
+  temporal_family    <- attrs$temporal_family
+  spatial_sampler    <- attrs$spatial_sampler
+  temporal_sampler    <- attrs$temporal_sampler
+  spatial_pdf  <- attrs$spatial_pdf
+  temporal_pdf <- attrs$temporal_pdf
+  spatial_cdf  <- attrs$spatial_cdf
+  temporal_cdf <- attrs$temporal_cdf
+  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+
 
   # Wrap data to sample blocks beyond end
   t_length <- time_window[2] - time_window[1]
@@ -168,12 +215,12 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = 
 
   boot_ests |>
     tidyr::drop_na() |>
-    dplyr::group_by(parameter_type, parameter) |>
-    dplyr::summarise(boot_est_median = median(value),
-                     lower = quantile(value, alpha/2),
-                     upper = quantile(value, 1-(alpha/2)),
-                     width = upper - lower,
-                     sd = sd(value)) |>
+    dplyr::group_by(.data$parameter_type, .data$parameter) |>
+    dplyr::summarise(boot_est_median = stats::median(.data$value),
+                     lower = stats::quantile(.data$value, alpha/2),
+                     upper = stats::quantile(.data$value, 1-(alpha/2)),
+                     width = .data$upper - .data$lower,
+                     sd = stats::sd(.data$value)) |>
     dplyr::ungroup() |>
     dplyr::mutate(
       percent_failed = n_failed / B
