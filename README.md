@@ -5,7 +5,7 @@ stHawkesTools provides utilities for simulating, fitting, and diagnosing general
 ## Getting started
 
 The development version of `stHawkesTools` is hosted on GitHub.  Install it
-with `remotes::install_github()` (or the equivalent `devtools::install_github()`).
+with `remotes::install_github("cfox20/stHawkesTools")` (or the equivalent `devtools::install_github("cfox20/stHawkesTools")`).
 
 After installing, use the [Getting Started vignette](vignettes/getting-started.Rmd) to walk through an example analysis. You can also open the vignette from an R session once the package is installed by running:
 ```r
