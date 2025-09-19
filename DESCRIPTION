@@ -27,7 +27,7 @@ Imports:
 Suggests: knitr, rmarkdown, future
 VignetteBuilder: knitr
 Depends: 
-    R (>= 2.10)
+    R (>= 4.1.0)
 LazyData: true
 URL: https://github.com/cfox20/stHawkesTools
 BugReports: https://github.com/cfox20/stHawkesTools/issues
