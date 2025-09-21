@@ -124,7 +124,7 @@ hawkes <- rHawkes(
   params = true_params,
   time_window = c(0, 40),
   spatial_region = spatial_region,
-  covariate_columns = "center",
+  background_process = ~ center,
   spatial_burnin = 1
 )
 
