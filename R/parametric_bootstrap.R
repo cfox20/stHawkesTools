@@ -25,10 +25,10 @@
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
@@ -46,10 +46,10 @@
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
@@ -94,12 +94,15 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
   n_failed <- 0
 
   boot_ests <- furrr::future_map_dfr(1:B, ~ tryCatch({
-    sample <- rHawkes(est$est, time_window, spatial_region,
-                      covariate_columns = covariate_columns,
-                      temporal_burnin = temporal_burnin,
-                      spatial_burnin = spatial_burnin,
-                      spatial_family = spatial_family,
-                      temporal_family = temporal_family)
+    sample <- rHawkes(
+      hawkes = hawkes,
+      background_process = .background_columns_to_formula(covariate_columns),
+      params = est$est,
+      temporal_burnin = temporal_burnin,
+      spatial_burnin = spatial_burnin,
+      spatial_family = spatial_family,
+      temporal_family = temporal_family
+    )
 
     # Estimate the parameters on each bootstrapped sample and transform to long tibble
     boot_est <- hawkes_mle(sample, inits = est$est, boundary = boundary, max_iters = max_iters)
@@ -120,10 +123,15 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
 
   } else{
     boot_samples <- purrr::map(1:B, ~ {
-      sample <-  rHawkes(est$est, time_window, spatial_region,
-                         covariate_columns = covariate_columns,
-                         temporal_burnin = temporal_burnin, spatial_burnin = spatial_burnin,
-                         spatial_family = spatial_family, temporal_family = temporal_family)
+      sample <- rHawkes(
+        hawkes = hawkes,
+        background_process = .background_columns_to_formula(covariate_columns),
+        params = est$est,
+        temporal_burnin = temporal_burnin,
+        spatial_burnin = spatial_burnin,
+        spatial_family = spatial_family,
+        temporal_family = temporal_family
+      )
     })
     n_failed <- 0
     boot_ests <- purrr::imap_dfr(boot_samples, ~ tryCatch({

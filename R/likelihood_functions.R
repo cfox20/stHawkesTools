@@ -16,7 +16,7 @@
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' conditional_intensity(hawkes, params)
 conditional_intensity <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -111,7 +111,7 @@ conditional_intensity <- function(hawkes, parameters) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' spatial_conditional_intensity(hawkes, params, 25, 0.5)
 #'
 #' params <- list(
@@ -123,10 +123,10 @@ conditional_intensity <- function(hawkes, parameters) {
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #'
@@ -236,7 +236,7 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' temporal_conditional_intensity(hawkes, params, c(5, 5))
 temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
@@ -342,7 +342,7 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 #'   spatial = list(mean = 0, sd = 0.5),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, c(0, 50), spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' log_likelihood(hawkes, params)
 log_likelihood <- function(hawkes, parameters) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")

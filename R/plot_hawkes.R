@@ -39,10 +39,10 @@
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #'
@@ -108,7 +108,7 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
 #' plot_intensity(hawkes, est, stepsize = 0.25, time = 40)
@@ -124,10 +124,10 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))

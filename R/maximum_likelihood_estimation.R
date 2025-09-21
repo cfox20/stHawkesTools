@@ -17,7 +17,7 @@
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #'
 #' (parent_est_mat <- parent_est(hawkes, params))
 #'
@@ -30,10 +30,10 @@
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 0
 #' )
 #'
@@ -140,7 +140,7 @@ parent_est <- function(hawkes, parameters) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' parent_est_mat <- parent_est(hawkes, params)
 #' est_params(hawkes, params, parent_est_mat)
 #'
@@ -275,6 +275,8 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' Function to estimate MLEs
 #'
 #' @param hawkes A `hawkes` object.
+#' @param background_process One-sided formula specifying background covariates. When
+#'   omitted, any existing covariate metadata stored on `hawkes` is reused.
 #' @param inits Named list of initial background, triggering, spatial, and temporal
 #'   parameters. To fix parameters, include a `fixed` list such as
 #'   `fixed$spatial = c("mean")`.
@@ -294,8 +296,13 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'   spatial = list(mean = 0, sd = 0.1),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 100), spatial_region = spatial_region)
-#' hawkes_mle(hawkes, inits = params)
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 100),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1
+#' )
+#' hawkes_mle(hawkes, ~ 1, inits = params)
 #'
 #'
 #' params <- list(
@@ -307,14 +314,17 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
-#' hawkes_mle(hawkes, inits = params, boundary = 1)
-hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
+#' hawkes_mle(hawkes, ~ X1 + X2, inits = params, boundary = 1)
+hawkes_mle <- function(hawkes, background_process = ~ 1, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
+  if (!missing(background_process)) {
+    attr(hawkes, "covariate_columns") <- .background_formula_columns(background_process)
+  }
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
@@ -410,7 +420,7 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 #' est <- hawkes_mle(hawkes, inits = params)
 #' hessian_est(hawkes, est$est)
 #'

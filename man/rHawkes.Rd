@@ -5,36 +5,45 @@
 \title{Generate a Hawkes process}
 \usage{
 rHawkes(
+  hawkes = NULL,
+  background_process = ~1,
   params,
   time_window,
   spatial_region,
-  covariate_columns = NULL,
-  temporal_burnin = (time_window[2] - time_window[1])/(10),
-  spatial_burnin = sum(as.numeric(sf::st_area(spatial_region)))^0.25,
-  temporal_family = "Exponential",
-  spatial_family = "Gaussian"
+  temporal_burnin = NULL,
+  spatial_burnin = NULL,
+  temporal_family = NULL,
+  spatial_family = NULL
 )
 }
 \arguments{
+\item{hawkes}{Optional template \code{hawkes} object supplying process metadata. When
+omitted, \code{time_window}, \code{spatial_region}, and kernel families must be provided.}
+
+\item{background_process}{One-sided formula specifying background covariates. When omitted
+and \code{hawkes} is provided, covariate information stored on the object is reused.}
+
 \item{params}{Named list containing background, triggering, spatial, and temporal
 parameters. See the examples for the expected structure.}
 
-\item{time_window}{Numeric vector of length two specifying the simulated window.}
+\item{time_window}{Numeric vector of length two specifying the simulated window.
+Defaults to the window stored on \code{hawkes} when available.}
 
-\item{spatial_region}{\code{sf} object defining the spatial region.}
-
-\item{covariate_columns}{Optional character vector naming background covariates.}
+\item{spatial_region}{\code{sf} object defining the spatial region. Defaults to the region
+stored on \code{hawkes} when available.}
 
 \item{temporal_burnin}{Temporal burn-in duration. Defaults to one tenth of the window
 length.}
 
 \item{spatial_burnin}{Spatial burn-in radius. Defaults to \code{area(spatial_region)^0.25}.}
 
-\item{temporal_family}{Temporal triggering kernel. Defaults to "Exponential". Other
-options include "Power Law", "Uniform", and "Gamma".}
+\item{temporal_family}{Temporal triggering kernel. Defaults to the family stored on
+\code{hawkes} when supplied, otherwise "Exponential". Other options include
+"Power Law", "Uniform", and "Gamma".}
 
-\item{spatial_family}{Spatial triggering kernel. Defaults to "Gaussian". Other options
-include "Uniform" and "Exponential".}
+\item{spatial_family}{Spatial triggering kernel. Defaults to the family stored on
+\code{hawkes} when supplied, otherwise "Gaussian". Other options include
+"Uniform" and "Exponential".}
 }
 \value{
 A hawkes object with a generated Hawkes process.
@@ -52,9 +61,10 @@ params <- list(
   temporal = list(rate = 2)
 )
 (hawkes <- rHawkes(
-  params,
+  params = params,
   time_window = c(0, 50),
   spatial_region = spatial_region,
+  background_process = ~1,
   spatial_burnin = 1
 ))
 
@@ -67,10 +77,10 @@ params <- list(
 )
 data("example_background_covariates")
 rHawkes(
-  params,
-  c(0, 50),
-  example_background_covariates,
-  covariate_columns = c("X1", "X2"),
+  params = params,
+  time_window = c(0, 50),
+  spatial_region = example_background_covariates,
+  background_process = ~ X1 + X2,
   spatial_burnin = 1
 )
 }

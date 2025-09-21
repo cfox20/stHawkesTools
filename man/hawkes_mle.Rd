@@ -4,10 +4,20 @@
 \alias{hawkes_mle}
 \title{Function to estimate MLEs}
 \usage{
-hawkes_mle(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE)
+hawkes_mle(
+  hawkes,
+  background_process = ~1,
+  inits,
+  boundary = NULL,
+  max_iters = 500,
+  verbose = FALSE
+)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
+
+\item{background_process}{One-sided formula specifying background covariates. When omitted,
+any existing covariate metadata stored on \code{hawkes} is reused.}
 
 \item{inits}{Named list of initial background, triggering, spatial, and temporal
 parameters. To fix parameters, include a \code{fixed} list such as
@@ -34,8 +44,13 @@ params <- list(
   spatial = list(mean = 0, sd = 0.1),
   temporal = list(rate = 2)
 )
-hawkes <- rHawkes(params, time_window = c(0, 100), spatial_region = spatial_region)
-hawkes_mle(hawkes, inits = params)
+hawkes <- rHawkes(
+  params = params,
+  time_window = c(0, 100),
+  spatial_region = spatial_region,
+  background_process = ~1
+)
+hawkes_mle(hawkes, ~1, inits = params)
 
 
 params <- list(
@@ -47,11 +62,11 @@ params <- list(
 )
 data("example_background_covariates")
 hawkes <- rHawkes(
-  params,
-  c(0, 50),
-  example_background_covariates,
-  covariate_columns = c("X1", "X2"),
+  params = params,
+  time_window = c(0, 50),
+  spatial_region = example_background_covariates,
+  background_process = ~ X1 + X2,
   spatial_burnin = 1
 )
-hawkes_mle(hawkes, inits = params, boundary = 1)
+hawkes_mle(hawkes, ~ X1 + X2, inits = params, boundary = 1)
 }

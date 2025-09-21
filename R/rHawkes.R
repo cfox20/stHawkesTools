@@ -37,6 +37,31 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
     cbind(covariates)
 }
 
+.background_formula_columns <- function(background_process) {
+  if (missing(background_process) || is.null(background_process)) {
+    return(NULL)
+  }
+
+  if (!inherits(background_process, "formula")) {
+    stop("`background_process` must be a one-sided formula.")
+  }
+
+  if (length(background_process) != 2L) {
+    stop("`background_process` must not include a response term.")
+  }
+
+  cols <- all.vars(background_process)
+  if (length(cols) == 0) NULL else cols
+}
+
+.background_columns_to_formula <- function(covariate_columns) {
+  if (is.null(covariate_columns) || length(covariate_columns) == 0) {
+    stats::as.formula("~ 1")
+  } else {
+    stats::as.formula(paste("~", paste(covariate_columns, collapse = " + ")))
+  }
+}
+
 #' Simulate background events
 #'
 #' @param background_rate Vector of coefficients for the background covariates.
@@ -132,18 +157,24 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 
 #' Generate a Hawkes process
 #'
+#' @param hawkes Optional template `hawkes` object supplying process metadata. When
+#'   omitted, `time_window`, `spatial_region`, and kernel families must be provided.
+#' @param background_process One-sided formula specifying background covariates.
+#'   When omitted and `hawkes` is provided, covariate information stored on the
+#'   object is reused.
 #' @param params Named list containing background, triggering, spatial, and temporal
 #'   parameters. See the examples for the expected structure.
 #' @param time_window Numeric vector of length two specifying the simulated window.
-#' @param spatial_region `sf` object defining the spatial region.
-#' @param covariate_columns Optional character vector naming background covariates.
+#'   Defaults to the window stored on `hawkes` when available.
+#' @param spatial_region `sf` object defining the spatial region. Defaults to the
+#'   region stored on `hawkes` when available.
 #' @param temporal_burnin Temporal burn-in duration. Defaults to one tenth of the window
 #'   length.
 #' @param spatial_burnin Spatial burn-in radius. Defaults to `area(spatial_region)^0.25`.
-#' @param temporal_family Temporal triggering kernel. Defaults to "Exponential". Other
-#'   options include "Power Law", "Uniform", and "Gamma".
-#' @param spatial_family Spatial triggering kernel. Defaults to "Gaussian". Other options
-#'   include "Uniform" and "Exponential".
+#' @param temporal_family Temporal triggering kernel. Defaults to the family stored
+#'   on `hawkes` when supplied, otherwise "Exponential".
+#' @param spatial_family Spatial triggering kernel. Defaults to the family stored on
+#'   `hawkes` when supplied, otherwise "Gaussian".
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -160,9 +191,10 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #'   temporal = list(rate = 2)
 #' )
 #' (hawkes <- rHawkes(
-#'   params,
+#'   params = params,
 #'   time_window = c(0, 50),
 #'   spatial_region = spatial_region,
+#'   background_process = ~ 1,
 #'   spatial_burnin = 1
 #' ))
 #'
@@ -175,18 +207,70 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' )
 #' data("example_background_covariates")
 #' rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
-rHawkes <- function(params, time_window, spatial_region, covariate_columns = NULL,
-                    temporal_burnin = (time_window[2] - time_window[1]) / (10), spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
-                    temporal_family = "Exponential", spatial_family = "Gaussian") {
+rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window, spatial_region,
+                    temporal_burnin = NULL, spatial_burnin = NULL,
+                    temporal_family = NULL, spatial_family = NULL) {
+  if (!is.null(hawkes) && class(hawkes)[1] != "hawkes") {
+    stop("hawkes must be a hawkes object or NULL.")
+  }
+
+  if (!missing(background_process)) {
+    covariate_columns <- .background_formula_columns(background_process)
+  } else if (!is.null(hawkes)) {
+    covariate_columns <- attr(hawkes, "covariate_columns")
+  } else {
+    covariate_columns <- NULL
+  }
+
+  if (missing(time_window) || is.null(time_window)) {
+    if (!is.null(hawkes)) {
+      time_window <- attr(hawkes, "time_window")
+    } else {
+      stop("time_window must be provided when hawkes is NULL.")
+    }
+  }
+
+  if (missing(spatial_region) || is.null(spatial_region)) {
+    if (!is.null(hawkes)) {
+      spatial_region <- attr(hawkes, "spatial_region")
+    } else {
+      stop("spatial_region must be provided when hawkes is NULL.")
+    }
+  }
+
+  if (is.null(temporal_family)) {
+    if (!is.null(hawkes)) {
+      temporal_family <- attr(hawkes, "temporal_family")
+    } else {
+      temporal_family <- "Exponential"
+    }
+  }
+
+  if (is.null(spatial_family)) {
+    if (!is.null(hawkes)) {
+      spatial_family <- attr(hawkes, "spatial_family")
+    } else {
+      spatial_family <- "Gaussian"
+    }
+  }
+
+  if (is.null(temporal_burnin)) {
+    temporal_burnin <- (time_window[2] - time_window[1]) / (10)
+  }
+
+  if (is.null(spatial_burnin)) {
+    spatial_burnin <- sum(sf::st_area(spatial_region) |> as.numeric())^.25
+  }
+
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
   hawkes <- hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
-         spatial_family = spatial_family, temporal_family = temporal_family)
+         spatial_family = spatial_family, temporal_family = temporal_family, covariate_columns = covariate_columns)
 
   # Extract all hawkes object attributes
   attrs <- attributes(hawkes)

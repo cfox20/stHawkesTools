@@ -26,7 +26,7 @@ params <- list(
   spatial = list(mean = 0, sd = 0.75),
   temporal = list(rate = 2)
 )
-hawkes <- rHawkes(params, time_window = c(0, 50), spatial_region = spatial_region)
+hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
 est <- hawkes_mle(hawkes, inits = params)
 sample_subregion(hawkes, 25)
 

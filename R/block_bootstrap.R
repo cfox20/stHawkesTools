@@ -17,10 +17,10 @@
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #' extend_data_t_only(hawkes, 5)
@@ -80,10 +80,10 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #'
@@ -157,10 +157,10 @@ sample_blocks <- function(hawkes, num_blocks) {
 #' )
 #' data("example_background_covariates")
 #' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = example_background_covariates,
+#'   background_process = ~ X1 + X2,
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
