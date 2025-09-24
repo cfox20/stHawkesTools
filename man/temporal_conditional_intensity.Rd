@@ -31,6 +31,11 @@ params <- list(
   spatial = list(mean = 0, sd = 0.75),
   temporal = list(rate = 2)
 )
-hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
+hawkes <- rHawkes(
+  params = params,
+  time_window = c(0, 50),
+  spatial_region = spatial_region,
+  background_process = ~ 1
+)
 temporal_conditional_intensity(hawkes, params, c(5, 5))
 }

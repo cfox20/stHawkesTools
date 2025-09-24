@@ -21,7 +21,7 @@
 #'   temporal = list(rate = 2)
 #' )
 #' hawkes <- rHawkes(
-#'   background = ~ 1,
+#'   background_process = ~ 1,
 #'   params = params,
 #'   time_window = c(0, 50),
 #'   spatial_region = spatial_region,
@@ -109,7 +109,12 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
 #' plot_intensity(hawkes, est, stepsize = 0.25, time = 40)
