@@ -26,7 +26,12 @@ params <- list(
   spatial = list(mean = 0, sd = 0.1),
   temporal = list(rate = 2)
 )
-hawkes <- rHawkes(params = params, time_window = c(0, 100), spatial_region = spatial_region)
+hawkes <- rHawkes(
+  params = params,
+  time_window = c(0, 100),
+  spatial_region = spatial_region,
+  background_process = ~ 1
+)
 est <- hawkes_mle(hawkes, inits = params)
 residuals <- time_scaled_residuals(hawkes, est)
 

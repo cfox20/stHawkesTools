@@ -15,7 +15,12 @@
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params)
 #' sample_subregion(hawkes, 25)
 #'
@@ -82,7 +87,12 @@ sample_subregion <- function(hawkes, length) {
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params = params, time_window = c(0, 50), spatial_region = spatial_region)
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params)
 #' subsample(hawkes, est, 5, 25, alpha = 0.05)
 subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL) {

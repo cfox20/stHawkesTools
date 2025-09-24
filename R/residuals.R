@@ -15,7 +15,12 @@
 #'   spatial = list(mean = 0, sd = 0.1),
 #'   temporal = list(rate = 2)
 #' )
-#' hawkes <- rHawkes(params = params, time_window = c(0, 100), spatial_region = spatial_region)
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 100),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1
+#' )
 #' est <- hawkes_mle(hawkes, inits = params)
 #' residuals <- time_scaled_residuals(hawkes, est)
 #'
@@ -29,7 +34,7 @@
 #'   main = "Residual vs Exponential(1)"
 #' )
 #' lines(density(residuals, from = 0), col = "red")
-#'
+#' 
 #' params <- list(
 #'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
 #'   triggering_rate = 0.5,
@@ -148,5 +153,44 @@ time_scaled_residuals <- function(hawkes, est) {
     }
 
   as.numeric(background_term) + triggering_term
+}
+
+#' Exponential Q-Q plot for time-scaled residuals
+#'
+#' @param residuals Numeric vector of time-scaled residuals.
+#'
+#' @returns A `ggplot` comparing sample quantiles to the theoretical Exp(1) distribution.
+#' @export
+#'
+#' @examples
+#' residuals <- stats::rexp(100, rate = 1)
+#' residual_qqplot(residuals)
+residual_qqplot <- function(residuals) {
+  if (!is.numeric(residuals)) {
+    rlang::abort("`residuals` must be a numeric vector.")
+  }
+
+  residuals <- residuals[is.finite(residuals)]
+
+  if (length(residuals) == 0L) {
+    rlang::abort("`residuals` must contain at least one finite value.")
+  }
+
+  ordered_residuals <- sort(residuals)
+  n <- length(ordered_residuals)
+  probs <- (seq_len(n) - 0.5) / n
+  theoretical <- stats::qexp(probs, rate = 1)
+
+  qq_data <- tibble::tibble(theoretical = theoretical, sample = ordered_residuals)
+
+  ggplot2::ggplot(qq_data, ggplot2::aes(x = theoretical, y = sample)) +
+    ggplot2::geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
+    ggplot2::geom_point() +
+    ggplot2::labs(
+      x = "Theoretical Quantiles (Exp(1))",
+      y = "Sample Quantiles",
+      title = "Exponential Q-Q Plot of Time-Scaled Residuals"
+    ) +
+    ggplot2::theme_minimal()
 }
 
