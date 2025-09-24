@@ -21,7 +21,8 @@
 #'   temporal = list(rate = 2)
 #' )
 #' hawkes <- rHawkes(
-#'   params,
+#'   background = ~ 1,
+#'   params = params,
 #'   time_window = c(0, 50),
 #'   spatial_region = spatial_region,
 #'   spatial_burnin = 1
@@ -134,6 +135,9 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' plot_hawkes(hawkes)
 #' plot_intensity(hawkes, est, stepsize = 0.1, time = 40, coordinates = c(4.5, 5))
 plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL) {
+  if (is.null(time) && is.null(coordinates)) {
+    stop("At least 1 of time or coordinates must be provided.")
+  }
   plots <- list()
 
   if (!is.null(time)) {
@@ -141,7 +145,7 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
 
     plots$spatial <- spatial |>
       ggplot2::ggplot() +
-      ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = .data$intensity)) +
+      ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = .data$intensity), interpolate = TRUE) +
       ggplot2::scale_fill_gradient(low = "white", high = "firebrick", limits = c(0, NA)) +
       ggplot2::geom_point(data = dplyr::filter(hawkes, .data$t < time), ggplot2::aes(.data$x, .data$y)) +
       ggplot2::labs(x = "X", y = "Y", fill = "Intensity",

@@ -16,8 +16,8 @@ hawkes_mle(
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
 
-\item{background_process}{One-sided formula specifying background covariates. When omitted,
-any existing covariate metadata stored on \code{hawkes} is reused.}
+\item{background_process}{One-sided formula specifying background covariates. When
+omitted, any existing covariate metadata stored on \code{hawkes} is reused.}
 
 \item{inits}{Named list of initial background, triggering, spatial, and temporal
 parameters. To fix parameters, include a \code{fixed} list such as
@@ -48,9 +48,9 @@ hawkes <- rHawkes(
   params = params,
   time_window = c(0, 100),
   spatial_region = spatial_region,
-  background_process = ~1
+  background_process = ~ 1
 )
-hawkes_mle(hawkes, ~1, inits = params)
+hawkes_mle(hawkes, ~ 1, inits = params)
 
 
 params <- list(

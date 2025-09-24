@@ -30,7 +30,8 @@ params <- list(
   temporal = list(rate = 2)
 )
 hawkes <- rHawkes(
-  params,
+  background = ~ 1,
+  params = params,
   time_window = c(0, 50),
   spatial_region = spatial_region,
   spatial_burnin = 1
