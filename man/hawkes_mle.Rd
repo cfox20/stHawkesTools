@@ -40,7 +40,7 @@ spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
 params <- list(
   background_rate = list(intercept = -4),
-  triggering_rate = 0.5,
+  triggering_rate = 0.1,
   spatial = list(mean = 0, sd = 0.1),
   temporal = list(rate = 2)
 )

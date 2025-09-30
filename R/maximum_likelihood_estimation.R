@@ -302,7 +302,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'
 #' params <- list(
 #'   background_rate = list(intercept = -4),
-#'   triggering_rate = 0.5,
+#'   triggering_rate = 0.1,
 #'   spatial = list(mean = 0, sd = 0.1),
 #'   temporal = list(rate = 2)
 #' )
