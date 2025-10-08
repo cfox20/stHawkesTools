@@ -10,7 +10,12 @@ plot_intensity(
   stepsize,
   time = NULL,
   coordinates = NULL,
-  interpolate = FALSE
+  interpolate = FALSE,
+  spatial_zoom = NULL,
+  temporal_zoom = NULL,
+  zoom_to_most_recent = FALSE,
+  recent_spatial_radius = NULL,
+  recent_time_window = NULL
 )
 }
 \arguments{
@@ -25,6 +30,21 @@ plot_intensity(
 \item{coordinates}{Numeric vector of length two giving the evaluation location.}
 
 \item{interpolate}{If TRUE interpolate linearly, if FALSE (the default) don't interpolate.}
+
+\item{spatial_zoom}{Optional numeric vector of length four giving xmin, xmax, ymin, and ymax bounds
+for a spatial zoom window.}
+
+\item{temporal_zoom}{Optional numeric vector of length two giving the start and end times for a
+temporal zoom window.}
+
+\item{zoom_to_most_recent}{Logical; if \code{TRUE}, overrides the manual zoom settings and centers
+the view on the most recent event observed prior to \code{time}.}
+
+\item{recent_spatial_radius}{Optional numeric vector of length one or two giving the half-width of the
+spatial window used when \code{zoom_to_most_recent = TRUE}.}
+
+\item{recent_time_window}{Optional numeric vector of length one or two giving the amount of time before
+and after the most recent event to include when \code{zoom_to_most_recent = TRUE}.}
 }
 \value{
 A list of \code{ggplot2} objects showing spatial and temporal intensity views.

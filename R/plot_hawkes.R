@@ -95,6 +95,16 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' @param time A numeric value giving the time at which to evaluate the conditional intensity.
 #' @param coordinates Numeric vector of length two giving the evaluation location.
 #' @param interpolate If TRUE interpolate linearly, if FALSE (the default) don't interpolate.
+#' @param spatial_zoom Optional numeric vector of length four giving xmin, xmax, ymin, and ymax
+#'   bounds for a spatial zoom window.
+#' @param temporal_zoom Optional numeric vector of length two giving the start and end times for a
+#'   temporal zoom window.
+#' @param zoom_to_most_recent Logical; if `TRUE`, overrides the manual zoom settings and centers the
+#'   view on the most recent event observed prior to `time`.
+#' @param recent_spatial_radius Optional numeric vector of length one or two giving the half-width of
+#'   the spatial window used when `zoom_to_most_recent = TRUE`.
+#' @param recent_time_window Optional numeric vector of length one or two giving the amount of time
+#'   before and after the most recent event to include when `zoom_to_most_recent = TRUE`.
 #'
 #' @return A list of `ggplot2` objects showing spatial and temporal intensity views.
 #' @export
@@ -140,7 +150,10 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 #' plot_hawkes(hawkes)
 #' plot_intensity(hawkes, est, stepsize = .05, time = 50, coordinates = c(4.5, 5))
-plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL, interpolate = FALSE) {
+plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL,
+                           interpolate = FALSE, spatial_zoom = NULL,
+                           temporal_zoom = NULL, zoom_to_most_recent = FALSE,
+                           recent_spatial_radius = NULL, recent_time_window = NULL) {
   if (is.null(time) && is.null(coordinates)) {
     stop("At least 1 of time or coordinates must be provided.")
   }
@@ -164,22 +177,130 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
 
   plots <- list()
 
+  zoom_region <- NULL
+  time_limits <- NULL
+
+  if (!is.null(spatial_zoom)) {
+    if (!(is.numeric(spatial_zoom) && length(spatial_zoom) == 4)) {
+      stop("spatial_zoom must be a numeric vector of length 4 specifying xmin, xmax, ymin, and ymax.")
+    }
+    zoom_bbox <- sf::st_bbox(c(xmin = spatial_zoom[1], xmax = spatial_zoom[2],
+                               ymin = spatial_zoom[3], ymax = spatial_zoom[4]),
+                             crs = sf::st_crs(spatial_region))
+    zoom_region <- suppressWarnings(sf::st_crop(spatial_region, zoom_bbox))
+  }
+
+  if (!is.null(temporal_zoom)) {
+    if (!(is.numeric(temporal_zoom) && length(temporal_zoom) == 2)) {
+      stop("temporal_zoom must be a numeric vector of length 2 specifying the time window.")
+    }
+    time_limits <- sort(temporal_zoom)
+    time_limits[1] <- max(time_window[1], time_limits[1])
+    time_limits[2] <- min(time_window[2], time_limits[2])
+  }
+
+  if (zoom_to_most_recent) {
+    if (is.null(time)) {
+      stop("time must be provided when zoom_to_most_recent = TRUE.")
+    }
+
+    hawkes_prior <- hawkes[hawkes$t <= time, ]
+    if (nrow(hawkes_prior) == 0) {
+      stop("No events observed prior to the provided time. Unable to determine most recent point.")
+    }
+
+    recent_point <- hawkes_prior[which.max(hawkes_prior$t), ]
+
+    if (is.null(recent_spatial_radius)) {
+      recent_spatial_radius <- rep(stepsize * 5, 2)
+    }
+    if (length(recent_spatial_radius) == 1) {
+      recent_spatial_radius <- rep(recent_spatial_radius, 2)
+    }
+    if (!(is.numeric(recent_spatial_radius) && length(recent_spatial_radius) == 2)) {
+      stop("recent_spatial_radius must be a numeric vector of length 1 or 2.")
+    }
+
+    spatial_zoom <- c(recent_point$x - recent_spatial_radius[1],
+                      recent_point$x + recent_spatial_radius[1],
+                      recent_point$y - recent_spatial_radius[2],
+                      recent_point$y + recent_spatial_radius[2])
+
+    zoom_bbox <- sf::st_bbox(c(xmin = spatial_zoom[1], xmax = spatial_zoom[2],
+                               ymin = spatial_zoom[3], ymax = spatial_zoom[4]),
+                             crs = sf::st_crs(spatial_region))
+    zoom_region <- suppressWarnings(sf::st_crop(spatial_region, zoom_bbox))
+
+    if (is.null(recent_time_window)) {
+      recent_time_window <- c(10, 10)
+    }
+    if (length(recent_time_window) == 1) {
+      recent_time_window <- rep(recent_time_window, 2)
+    }
+    if (!(is.numeric(recent_time_window) && length(recent_time_window) == 2)) {
+      stop("recent_time_window must be numeric of length 1 or 2.")
+    }
+
+    temporal_zoom <- c(recent_point$t - recent_time_window[1],
+                       recent_point$t + recent_time_window[2])
+    temporal_zoom[1] <- max(time_window[1], temporal_zoom[1])
+    temporal_zoom[2] <- min(time, temporal_zoom[2])
+
+    time_limits <- temporal_zoom
+  }
+
+  if (!is.null(zoom_region) && nrow(zoom_region) == 0) {
+    stop("The requested spatial zoom does not intersect the observed spatial region.")
+  }
+
+  if (!is.null(time_limits) && time_limits[1] >= time_limits[2]) {
+    stop("The requested temporal zoom does not overlap with the observed time window.")
+  }
+
+  spatial_layer_region <- if (!is.null(zoom_region)) zoom_region else spatial_region
+  zoom_bbox <- if (!is.null(zoom_region)) sf::st_bbox(zoom_region) else NULL
+
   if (!is.null(time)) {
-    spatial <- spatial_conditional_intensity(hawkes, est, time, stepsize)
+    spatial <- spatial_conditional_intensity(hawkes, est, time, stepsize,
+                                             spatial_zoom = spatial_layer_region)
+
+    if (!is.null(zoom_bbox)) {
+      spatial <- dplyr::filter(spatial, .data$x >= zoom_bbox[["xmin"]],
+                               .data$x <= zoom_bbox[["xmax"]],
+                               .data$y >= zoom_bbox[["ymin"]],
+                               .data$y <= zoom_bbox[["ymax"]])
+    }
+
+    hawkes_points <- dplyr::filter(hawkes, .data$t < time)
+    if (!is.null(zoom_region)) {
+      suppressWarnings({
+        pts_filter <- sf::st_intersects(hawkes_points, zoom_region, sparse = FALSE)
+      })
+      if (length(pts_filter)) {
+        hawkes_points <- hawkes_points[apply(pts_filter, 1, any), ]
+      } else {
+        hawkes_points <- hawkes_points[FALSE, ]
+      }
+    }
 
     plots$spatial <- spatial |>
       ggplot2::ggplot() +
       ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = .data$intensity), interpolate = interpolate) +
       ggplot2::coord_sf() +
       ggplot2::scale_fill_gradient(low = "white", high = "firebrick", limits = c(0, NA)) +
-      ggplot2::geom_sf(data = spatial_region, inherit.aes = FALSE, fill = NA) +
-      ggplot2::geom_sf(data = dplyr::filter(hawkes, .data$t < time)) +
+      ggplot2::geom_sf(data = spatial_layer_region, inherit.aes = FALSE, fill = NA) +
+      ggplot2::geom_sf(data = hawkes_points) +
       ggplot2::labs(x = "X", y = "Y", fill = "Intensity",
                     title = paste("Spatial Intensity at t =", time))
   }
 
   if (!is.null(coordinates)) {
-    temporal <- temporal_conditional_intensity(hawkes, est, coordinates, stepsize)
+    temporal <- temporal_conditional_intensity(hawkes, est, coordinates, stepsize,
+                                               time_window = time_limits)
+
+    if (!is.null(time_limits)) {
+      temporal <- dplyr::filter(temporal, .data$t >= time_limits[1], .data$t <= time_limits[2])
+    }
 
     plots$temporal <- temporal |>
       ggplot2::ggplot() +

@@ -4,7 +4,13 @@
 \alias{temporal_conditional_intensity}
 \title{Compute the conditional intensity at a location}
 \usage{
-temporal_conditional_intensity(hawkes, parameters, coordinates, step = 0.1)
+temporal_conditional_intensity(
+  hawkes,
+  parameters,
+  coordinates,
+  step = 0.1,
+  time_window = NULL
+)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
@@ -15,6 +21,9 @@ parameters.}
 \item{coordinates}{Numeric vector of length two giving the evaluation location.}
 
 \item{step}{Grid step size used to build the temporal evaluation grid.}
+
+\item{time_window}{Optional numeric vector of length two giving the time interval over which to
+evaluate the intensity.}
 }
 \value{
 A numeric vector.

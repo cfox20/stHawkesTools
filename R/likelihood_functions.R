@@ -103,6 +103,8 @@ conditional_intensity <- function(hawkes, parameters) {
 #'   parameters.
 #' @param time Time point where the conditional intensity is evaluated.
 #' @param stepsize Grid cell size used to evaluate the spatial intensity.
+#' @param spatial_zoom Optional `sf` object representing a subset of the spatial region on which to
+#'   evaluate the intensity.
 #'
 #' @returns A numeric vector.
 #' @export
@@ -141,7 +143,8 @@ conditional_intensity <- function(hawkes, parameters) {
 #' )
 #'
 #' spatial_conditional_intensity(hawkes, params, 25, 0.5)
-spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
+spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize,
+                                          spatial_zoom = NULL) {
   if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
@@ -170,6 +173,20 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 
   hawkes <- hawkes[hawkes$t < time,]
 
+  if (!is.null(spatial_zoom)) {
+    spatial_region <- spatial_zoom
+
+    suppressWarnings({
+      spatial_filter <- sf::st_intersects(hawkes, spatial_region, sparse = FALSE)
+    })
+
+    if (length(spatial_filter)) {
+      hawkes <- hawkes[apply(spatial_filter, 1, any), ]
+    } else {
+      hawkes <- hawkes[FALSE, ]
+    }
+  }
+
   time_window[2] <- time
 
   point_grid <- spatial_region |>
@@ -177,6 +194,10 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
     sf::st_as_sf() |>
     sf::st_intersection(spatial_region) |>
     suppressWarnings()
+
+  if (nrow(point_grid) == 0) {
+    return(data.frame(x = numeric(), y = numeric(), intensity = numeric()))
+  }
 
   x <- sf::st_coordinates(point_grid)[,1]
   y <- sf::st_coordinates(point_grid)[,2]
@@ -235,6 +256,8 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 #'   parameters.
 #' @param coordinates Numeric vector of length two giving the evaluation location.
 #' @param step Grid step size used to build the temporal evaluation grid.
+#' @param time_window Optional numeric vector of length two giving the time interval over which to
+#'   evaluate the intensity.
 #'
 #' @returns A numeric vector.
 #' @export
@@ -255,7 +278,8 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 #'   background_process = ~ 1
 #' )
 #' temporal_conditional_intensity(hawkes, params, c(5, 5))
-temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
+temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1,
+                                           time_window = NULL) {
   if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
@@ -268,7 +292,7 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   attrs <- attributes(hawkes)
 
   # Assign all attributes to variables in the function environment
-  time_window <- attrs$time_window
+  time_window_attr <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
   spatial_family    <- attrs$spatial_family
@@ -285,8 +309,26 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   x <- coordinates[1]
   y <- coordinates[2]
 
+  if (is.null(time_window)) {
+    time_window <- time_window_attr
+  } else {
+    if (length(time_window) != 2 || !is.numeric(time_window)) {
+      stop("time_window must be a numeric vector of length 2.")
+    }
+    time_window <- sort(time_window)
+    time_window[1] <- max(time_window_attr[1], time_window[1])
+    time_window[2] <- min(time_window_attr[2], time_window[2])
+  }
+
+  if (time_window[1] > time_window[2]) {
+    stop("time_window must overlap the observed time interval.")
+  }
+
+  hawkes <- hawkes[hawkes$t >= time_window[1] & hawkes$t <= time_window[2], ]
+
   t_points <- hawkes$t
   t_grid <- c(t_points, seq(time_window[1], time_window[2], by = step)) |>
+    unique() |>
     sort()
 
   background_rate <- parameters$background_rate
@@ -296,23 +338,27 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 
   background_rate <- as.numeric(background_rate)
 
-  time_diff <- outer(t_grid, hawkes$t, `-`)
-  x_diff <- matrix(rep(outer(x, hawkes$x, `-`), nrow(time_diff)), nrow = nrow(time_diff), byrow = TRUE)
-  y_diff <- matrix(rep(outer(y, hawkes$y, `-`), nrow(time_diff)), nrow = nrow(time_diff), byrow = TRUE)
+  if (nrow(hawkes) > 0) {
+    time_diff <- outer(t_grid, hawkes$t, `-`)
+    x_diff <- matrix(rep(outer(x, hawkes$x, `-`), nrow(time_diff)), nrow = nrow(time_diff), byrow = TRUE)
+    y_diff <- matrix(rep(outer(y, hawkes$y, `-`), nrow(time_diff)), nrow = nrow(time_diff), byrow = TRUE)
 
-  # Compute a matrix of the triggering intensities
-  if (!spatial_is_separable) {
-    s_diff <- cbind(x_diff, y_diff)
-    g_mat <- {triggering_rate *
-             do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
-             do.call(spatial_pdf, c(list(x = s_diff), parameters$spatial))
-             }
+    # Compute a matrix of the triggering intensities
+    if (!spatial_is_separable) {
+      s_diff <- cbind(x_diff, y_diff)
+      g_mat <- {triggering_rate *
+               do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
+               do.call(spatial_pdf, c(list(x = s_diff), parameters$spatial))
+               }
+    } else {
+      g_mat <- {triggering_rate *
+               do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
+               do.call(spatial_pdf, c(list(x = x_diff), parameters$spatial)) *
+               do.call(spatial_pdf, c(list(x = y_diff), parameters$spatial))
+               }
+    }
   } else {
-    g_mat <- {triggering_rate *
-             do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
-             do.call(spatial_pdf, c(list(x = x_diff), parameters$spatial)) *
-             do.call(spatial_pdf, c(list(x = y_diff), parameters$spatial))
-             }
+    g_mat <- matrix(0, nrow = length(t_grid), ncol = 0)
   }
   # g_mat[upper.tri(g_mat, diag = TRUE)] <- 0
 
