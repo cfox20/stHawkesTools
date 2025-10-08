@@ -34,7 +34,7 @@
 #'   main = "Residual vs Exponential(1)"
 #' )
 #' lines(density(residuals, from = 0), col = "red")
-#' 
+#'
 #' params <- list(
 #'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
 #'   triggering_rate = 0.5,
@@ -63,7 +63,7 @@
 #' )
 #' lines(density(residuals, from = 0), col = "red")
 time_scaled_residuals <- function(hawkes, est) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 
@@ -190,7 +190,6 @@ residual_qqplot <- function(residuals) {
       x = "Theoretical Quantiles (Exp(1))",
       y = "Sample Quantiles",
       title = "Exponential Q-Q Plot of Time-Scaled Residuals"
-    ) +
-    ggplot2::theme_minimal()
+    )
 }
 

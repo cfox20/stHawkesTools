@@ -61,31 +61,30 @@
 #' @returns The negative log-likelihood contribution of the temporal parameters.
 #' @keywords internal
 .temporal_parameter_likelihood <- function(p, hawkes, parent_est_mat, time_diff, triggering_rate) {
-  # Extract all hawkes object attributes
+  # Pull needed attributes
   attrs <- attributes(hawkes)
-
-  # Assign all attributes to variables in the function environment
-  time_window <- attrs$time_window
-  spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
-  spatial_family    <- attrs$spatial_family
-  temporal_family    <- attrs$temporal_family
-  spatial_sampler    <- attrs$spatial_sampler
-  temporal_sampler    <- attrs$temporal_sampler
-  spatial_pdf  <- attrs$spatial_pdf
+  time_window  <- attrs$time_window
   temporal_pdf <- attrs$temporal_pdf
-  spatial_cdf  <- attrs$spatial_cdf
   temporal_cdf <- attrs$temporal_cdf
-  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
 
+  tryCatch({
+    pdf_vals <- purrr::exec(temporal_pdf, x = time_diff, !!!p)
+    cdf_vals <- purrr::exec(temporal_cdf, q = time_window[2] - hawkes$t, !!!p)
 
-  tryCatch(-{sum(parent_est_mat *
-          .safe_log(do.call(.env$temporal_pdf, c(list(x = .env$time_diff), p)))) -
-      triggering_rate *
-      sum(do.call(.env$temporal_cdf, c(list(q = .env$time_window[2] - .env$hawkes$t), .env$p)))},
-    error = function(e){
-      stop(paste("Error in temporal parameter optimization:", e$message, "\n Last parameter values: ", p, "\n"))
-    })
+    -sum(parent_est_mat * .safe_log(pdf_vals)) -
+      triggering_rate * sum(cdf_vals)
+  },
+  error = function(e) {
+    stop(
+      paste0(
+        "Error in temporal parameter optimization: ", e$message,
+        "\nLast parameter values: ",
+        paste(paste(names(p), unlist(p), sep = "="), collapse = ", "),
+        "\n"
+      ),
+      call. = FALSE
+    )
+  })
 }
 
 

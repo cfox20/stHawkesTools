@@ -4,7 +4,14 @@
 \alias{plot_intensity}
 \title{Plot conditional intensity of a Hawkes process}
 \usage{
-plot_intensity(hawkes, est, stepsize, time = NULL, coordinates = NULL)
+plot_intensity(
+  hawkes,
+  est,
+  stepsize,
+  time = NULL,
+  coordinates = NULL,
+  interpolate = FALSE
+)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}
@@ -16,6 +23,8 @@ plot_intensity(hawkes, est, stepsize, time = NULL, coordinates = NULL)
 \item{time}{A numeric value giving the time at which to evaluate the conditional intensity.}
 
 \item{coordinates}{Numeric vector of length two giving the evaluation location.}
+
+\item{interpolate}{If TRUE interpolate linearly, if FALSE (the default) don't interpolate.}
 }
 \value{
 A list of \code{ggplot2} objects showing spatial and temporal intensity views.
@@ -63,5 +72,5 @@ hawkes <- rHawkes(
 )
 est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 plot_hawkes(hawkes)
-plot_intensity(hawkes, est, stepsize = 0.1, time = 40, coordinates = c(4.5, 5))
+plot_intensity(hawkes, est, stepsize = .05, time = 50, coordinates = c(4.5, 5))
 }

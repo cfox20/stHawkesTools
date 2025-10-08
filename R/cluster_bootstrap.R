@@ -28,7 +28,7 @@
 #' sample_clusters(hawkes, parent_mat, boundary = c(.5,3))
 #'
 sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 
@@ -172,7 +172,7 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
 #'
 #' future::plan(future::sequential)
 cluster_bootstrap <- function(hawkes, est, B, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 

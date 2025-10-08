@@ -24,7 +24,7 @@
 #' @returns TRUE
 #' @keywords internal
 .sanity_check <- function(hawkes) {
-  if (class(hawkes)[[1]] != "hawkes") {
+  if (!inherits(hawkes, "hawkes")) {
     stop("Object must be a hawkes object.")
   }
 

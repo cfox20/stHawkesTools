@@ -44,7 +44,7 @@
 #'
 #' (parent_est_mat <- parent_est(hawkes, params))
 parent_est <- function(hawkes, parameters) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
     parameters <- parameters$est
@@ -155,7 +155,7 @@ parent_est <- function(hawkes, parameters) {
 #' est_params(hawkes, params, parent_est_mat)
 #'
 est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixed_spatial = NULL, fixed_temporal = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
   if(class(parent_est_mat)[[1]] != "matrix") stop("parent_est_mat must be a matrix")
 
   .sanity_check(hawkes)
@@ -319,7 +319,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
 #'   triggering_rate = 0.5,
 #'   spatial = list(mean = 0, sd = 0.25),
-#'   temporal = list(rate = 2),
+#'   temporal = list(shape = 2, scale = 2),
 #'   fixed = list(spatial = "mean")
 #' )
 #' data("example_background_covariates")
@@ -328,14 +328,15 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'   time_window = c(0, 50),
 #'   spatial_region = example_background_covariates,
 #'   background_process = ~ X1 + X2,
-#'   spatial_burnin = 1
+#'   spatial_burnin = 1,
+#'   temporal_family = "Power Law"
 #' )
 #' hawkes_mle(hawkes, ~ X1 + X2, inits = params, boundary = 1)
 hawkes_mle <- function(hawkes, background_process = ~ 1, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
   if (!missing(background_process)) {
     attr(hawkes, "covariate_columns") <- .background_formula_columns(background_process)
   }
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 

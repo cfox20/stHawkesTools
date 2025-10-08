@@ -13,6 +13,9 @@ hawkes_trigger_lrt(hawkes, parameters, alpha = 0.05)
 
 \item{alpha}{Type-1 error rate for the hypothesis test. Defaults to 0.05 if unused.}
 }
+\value{
+A tibble
+}
 \description{
 Likelihood Ratio Test to Detect Triggering
 }
@@ -38,8 +41,8 @@ hawkes_trigger_lrt(hawkes, est)
 params <- list(
   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
   triggering_rate = 0.1,
-  spatial = list(mean = 0, sd = 0.5),
-  temporal = list(rate = 1),
+  spatial = list(mean = 0, sd = 0.25),
+  temporal = list(rate = 2),
   fixed = list(spatial = "mean")
 )
 data("example_background_covariates")

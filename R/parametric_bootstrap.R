@@ -61,7 +61,7 @@
 #' future::plan(future::sequential)
 parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE, max_iters = 500,
                                  boundary = NULL, temporal_burnin = NULL, spatial_burnin = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 

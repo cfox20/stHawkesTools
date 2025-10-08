@@ -25,7 +25,7 @@
 #' sample_subregion(hawkes, 25)
 #'
 sample_subregion <- function(hawkes, length) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 
@@ -96,7 +96,7 @@ sample_subregion <- function(hawkes, length) {
 #' est <- hawkes_mle(hawkes, inits = params)
 #' subsample(hawkes, est, 5, 25, alpha = 0.05)
 subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters = 500, boundary = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 

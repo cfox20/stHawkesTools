@@ -5,7 +5,7 @@
 #' @param parameters Parameter values stored in a named list or a `hawkes_fit` object from `hawkes_mle()`.
 #' @param alpha Type-1 error rate for the hypothesis test. Defaults to 0.05 if unused.
 #'
-#' @returns
+#' @returns A tibble
 #' @export
 #'
 #' @examples

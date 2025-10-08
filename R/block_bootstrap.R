@@ -176,7 +176,7 @@ sample_blocks <- function(hawkes, num_blocks) {
 #' )
 #'
 block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   .sanity_check(hawkes)
 

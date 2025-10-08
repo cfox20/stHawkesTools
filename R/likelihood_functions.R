@@ -24,7 +24,7 @@
 #' )
 #' conditional_intensity(hawkes, params)
 conditional_intensity <- function(hawkes, parameters) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
     parameters <- parameters$est
@@ -142,7 +142,7 @@ conditional_intensity <- function(hawkes, parameters) {
 #'
 #' spatial_conditional_intensity(hawkes, params, 25, 0.5)
 spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
     parameters <- parameters$est
@@ -219,10 +219,12 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 
   # Store the values of the complete likelihood at each point
   # exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
-  data.frame(x = x,
-             y = y,
-             t = time,
-             intensity = exp(as.numeric(X %*% background_rate)) + rowSums(g_mat))
+  sf::st_geometry(point_grid) <- "geometry"
+  point_grid$x <-  x
+  point_grid$y <-  y
+  point_grid$intensity <- exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
+
+  point_grid[, c(c("x", "y", "intensity"), setdiff(names(point_grid), c("x", "y", "intensity")))]
 }
 
 
@@ -254,7 +256,7 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
 #' )
 #' temporal_conditional_intensity(hawkes, params, c(5, 5))
 temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step = .1) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
     parameters <- parameters$est
@@ -365,7 +367,7 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
 #' )
 #' log_likelihood(hawkes, params)
 log_likelihood <- function(hawkes, parameters) {
-  if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
+  if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
   if (class(parameters)[1] == "hawkes_fit") {
     parameters <- parameters$est
