@@ -4,7 +4,13 @@
 \alias{spatial_conditional_intensity}
 \title{Compute the conditional intensity at a specified time}
 \usage{
-spatial_conditional_intensity(hawkes, parameters, time, stepsize, spatial_zoom = NULL)
+spatial_conditional_intensity(
+  hawkes,
+  parameters,
+  time,
+  stepsize,
+  spatial_zoom = NULL
+)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object.}
@@ -16,8 +22,8 @@ parameters.}
 
 \item{stepsize}{Grid cell size used to evaluate the spatial intensity.}
 
-\item{spatial_zoom}{Optional \code{sf} object representing a subset of the spatial region on which
-to evaluate the intensity.}
+\item{spatial_zoom}{Optional \code{sf} object representing a subset of the spatial region on which to
+evaluate the intensity.}
 }
 \value{
 A numeric vector.

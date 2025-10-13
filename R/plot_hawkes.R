@@ -95,6 +95,8 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' @param time A numeric value giving the time at which to evaluate the conditional intensity.
 #' @param coordinates Numeric vector of length two giving the evaluation location.
 #' @param interpolate If TRUE interpolate linearly, if FALSE (the default) don't interpolate.
+#' @param intensity_type Name of type of intensity to plot past as un unquoted name. Defaults to intensity for full intensity. Other options include triggering for triggering intensity and background for background intensity.
+#' @param point_size Numeric to set the size of points for the spatial plot
 #' @param spatial_zoom Optional numeric vector of length four giving xmin, xmax, ymin, and ymax
 #'   bounds for a spatial zoom window.
 #' @param temporal_zoom Optional numeric vector of length two giving the start and end times for a
@@ -134,8 +136,8 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #'
 #' params <- list(
 #'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-#'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.75),
+#'   triggering_rate = 0.15,
+#'   spatial = list(mean = 0, sd = 0.25),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -150,8 +152,10 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
 #' plot_hawkes(hawkes)
 #' plot_intensity(hawkes, est, stepsize = .05, time = 50, coordinates = c(4.5, 5))
+#' plot_intensity(hawkes, est, stepsize = .025, time = 32, interpolate = TRUE, intensity_type = triggering)
 plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL,
-                           interpolate = FALSE, spatial_zoom = NULL,
+                           interpolate = FALSE, intensity_type = intensity,
+                           point_size = 1.5, spatial_zoom = NULL,
                            temporal_zoom = NULL, zoom_to_most_recent = FALSE,
                            recent_spatial_radius = NULL, recent_time_window = NULL) {
   if (is.null(time) && is.null(coordinates)) {
@@ -212,7 +216,7 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
     recent_point <- hawkes_prior[which.max(hawkes_prior$t), ]
 
     if (is.null(recent_spatial_radius)) {
-      recent_spatial_radius <- rep(stepsize * 5, 2)
+      recent_spatial_radius <- rep(stepsize * 50, 2)
     }
     if (length(recent_spatial_radius) == 1) {
       recent_spatial_radius <- rep(recent_spatial_radius, 2)
@@ -221,13 +225,13 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
       stop("recent_spatial_radius must be a numeric vector of length 1 or 2.")
     }
 
-    spatial_zoom <- c(recent_point$x - recent_spatial_radius[1],
-                      recent_point$x + recent_spatial_radius[1],
-                      recent_point$y - recent_spatial_radius[2],
-                      recent_point$y + recent_spatial_radius[2])
+    spatial_zoom <- c(sf::st_coordinates(recent_point)[,1] - recent_spatial_radius[1],
+                      sf::st_coordinates(recent_point)[,1] + recent_spatial_radius[1],
+                      sf::st_coordinates(recent_point)[,2] - recent_spatial_radius[2],
+                      sf::st_coordinates(recent_point)[,2] + recent_spatial_radius[2])
 
-    zoom_bbox <- sf::st_bbox(c(xmin = spatial_zoom[1], xmax = spatial_zoom[2],
-                               ymin = spatial_zoom[3], ymax = spatial_zoom[4]),
+    zoom_bbox <- sf::st_bbox(c(xmin = spatial_zoom[[1]], xmax = spatial_zoom[[2]],
+                               ymin = spatial_zoom[[3]], ymax = spatial_zoom[[4]]),
                              crs = sf::st_crs(spatial_region))
     zoom_region <- suppressWarnings(sf::st_crop(spatial_region, zoom_bbox))
 
@@ -285,13 +289,13 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
 
     plots$spatial <- spatial |>
       ggplot2::ggplot() +
-      ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = .data$intensity), interpolate = interpolate) +
+      ggplot2::geom_raster(ggplot2::aes(.data$x, .data$y, fill = {{intensity_type}}), interpolate = interpolate) +
       ggplot2::coord_sf() +
       ggplot2::scale_fill_gradient(low = "white", high = "firebrick", limits = c(0, NA)) +
       ggplot2::geom_sf(data = spatial_layer_region, inherit.aes = FALSE, fill = NA) +
-      ggplot2::geom_sf(data = hawkes_points) +
+      ggplot2::geom_sf(data = hawkes_points, size = point_size) +
       ggplot2::labs(x = "X", y = "Y", fill = "Intensity",
-                    title = paste("Spatial Intensity at t =", time))
+                    title = paste("Conditional Intensity at t =", time))
   }
 
   if (!is.null(coordinates)) {
@@ -306,7 +310,7 @@ plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NUL
       ggplot2::ggplot() +
       ggplot2::geom_line(ggplot2::aes(.data$t, .data$intensity)) +
       ggplot2::labs(x = "Time", y = "Conditional Intensity",
-                    title = paste0("Temporal Intensity at (", coordinates[1], ", ", coordinates[2], ")"))
+                    title = paste0("Conditional Intensity at (", coordinates[1], ", ", coordinates[2], ")"))
   }
 
   if (length(plots) == 1) {

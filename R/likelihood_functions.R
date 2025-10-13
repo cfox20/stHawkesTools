@@ -244,6 +244,9 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize,
   point_grid$x <-  x
   point_grid$y <-  y
   point_grid$intensity <- exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
+  point_grid$background <- exp(as.numeric(X %*% background_rate))
+  point_grid$triggering <- rowSums(g_mat)
+
 
   point_grid[, c(c("x", "y", "intensity"), setdiff(names(point_grid), c("x", "y", "intensity")))]
 }
