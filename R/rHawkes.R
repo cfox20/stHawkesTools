@@ -368,7 +368,10 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' params <- list(
 #'   background_rate = list(intercept = -4,
 #'                          event_type = c(a = 1, b = .25)),
-#'   triggering_rate = 0.75,
+#'   triggering_rate = matrix(c(.4, .15,
+#'                              .2, .05),
+#'                            nrow = 2,
+#'                            dimnames = list(c("a", "b"), c("a", "b"))),
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
 #' )
@@ -516,8 +519,43 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
   if (!is.list(background_rate)) {
     stop("background_rate must be named list stored within named params list.")
   }
-  if (!((triggering_rate >= 0) && (triggering_rate < 1) && (is.numeric(triggering_rate)))) {
-    stop("triggering_rate must be a numeric value between 0 and 1.")
+  mark_levels <- NULL
+  if (!is.null(mark_column) && mark_column %in% names(data)) {
+    mark_levels <- levels(data[[mark_column]])
+  }
+
+  if (is.null(mark_column)) {
+    if (!((triggering_rate >= 0) && (triggering_rate < 1) && (is.numeric(triggering_rate)))) {
+      stop("triggering_rate must be a numeric value between 0 and 1.")
+    }
+  } else {
+    if (is.matrix(triggering_rate) || is.data.frame(triggering_rate)) {
+      triggering_rate <- as.matrix(triggering_rate)
+    } else if (length(triggering_rate) == 1L && is.numeric(triggering_rate)) {
+      triggering_rate <- matrix(triggering_rate,
+                                nrow = length(mark_levels),
+                                ncol = length(mark_levels),
+                                dimnames = list(mark_levels, mark_levels))
+    } else {
+      stop("triggering_rate must be a numeric scalar or matrix when marks are supplied.")
+    }
+
+    if (is.null(mark_levels)) {
+      stop("Mark levels could not be determined from the simulated data.")
+    }
+
+    if (is.null(rownames(triggering_rate)) || is.null(colnames(triggering_rate))) {
+      stop("triggering_rate matrix must have row and column names matching mark levels.")
+    }
+
+    if (!all(mark_levels %in% rownames(triggering_rate)) ||
+        !all(mark_levels %in% colnames(triggering_rate))) {
+      stop("triggering_rate matrix row and column names must include all mark levels.")
+    }
+
+    if (any(triggering_rate < 0) || any(triggering_rate >= 1)) {
+      stop("triggering_rate matrix entries must be numeric values between 0 and 1.")
+    }
   }
 
   # Generate background events
@@ -534,14 +572,30 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     O <- hawkes(params = params, time_window = time_window_burnin, spatial_region = spatial_region_burnin,
                 spatial_family = spatial_family, temporal_family = temporal_family, mark_column = mark_column) |>
       dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = .data$t)
+    if (!is.null(mark_column)) {
+      O <- O |>
+        dplyr::mutate("{mark_column}" := factor(character(), levels = mark_levels), .after = .data$gen)
+    }
     sf::st_crs(O) <- crs
 
     l <- l+1
 
+    if (is.null(mark_column)) {
+      N <- stats::rpois(nrow(G), triggering_rate)
+      total_children <- sum(N)
+    } else {
+      parent_marks <- as.character(G[[mark_column]])
+      N <- vector("list", length = nrow(G))
+      total_children <- 0L
+      for (i in seq_len(nrow(G))) {
+        child_rates <- triggering_rate[parent_marks[i], mark_levels]
+        child_counts <- stats::rpois(length(child_rates), child_rates)
+        N[[i]] <- child_counts
+        total_children <- total_children + sum(child_counts)
+      }
+    }
 
-    N <- stats::rpois(nrow(G), triggering_rate)
-
-    if(sum(N) == 0) {
+    if(total_children == 0) {
 
       # Filter out buffer region and burning period
       data <- data |>
@@ -564,30 +618,61 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     }
 
     for (i in 1:nrow(G)) {
-      if (N[i] > 0) {
-        # Model specified self-exciting kernels. Add parameters here
-        spatial_result <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial))
+      if (is.null(mark_column)) {
+        if (N[i] > 0) {
+          spatial_result <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial))
 
-        if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
-          # Case A: kernel returns a data.frame with x and y
-          x <- spatial_result$x + G$x[i]
-          y <- spatial_result$y + G$y[i]
-        } else if (is.numeric(spatial_result) && length(spatial_result) == N[i]) {
-          # Case B: kernel returns a numeric vector (e.g., rnorm)
-          x <- spatial_result + G$x[i]
-          y <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial)) + G$y[i]
-        } else {
-          stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
+          if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
+            x <- spatial_result$x + G$x[i]
+            y <- spatial_result$y + G$y[i]
+          } else if (is.numeric(spatial_result) && length(spatial_result) == N[i]) {
+            x <- spatial_result + G$x[i]
+            y <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial)) + G$y[i]
+          } else {
+            stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
+          }
+          t <- do.call(temporal_sampler, c(list(n = N[i]), params$temporal)) + G$t[i]
+
+          parent <- G$id[i]
+          family <- G$family[i]
+
+          O_i <- data.frame(x = x, y = y, t = t, parent = parent, gen = l, family = family) |>
+            sf::st_as_sf(coords = c("x", "y"), crs = crs)
+          O <- rbind(O, O_i)
         }
-        t <- do.call(temporal_sampler, c(list(n = N[i]), params$temporal)) + G$t[i]
+      } else {
+        child_counts <- N[[i]]
+        if (sum(child_counts) == 0) next
 
-        parent <- G$id[i]
-        family <- G$family[i]
+        for (j in seq_along(child_counts)) {
+          count <- child_counts[j]
+          if (count == 0) next
 
-        # Create dataframe of events in the new generation O
-        O_i <- data.frame(x = x, y = y, t = t, parent = parent, gen = l, family = family) |>
-          sf::st_as_sf(coords = c("x", "y"), crs = crs)
-        O <- rbind(O, O_i)
+          spatial_result <- do.call(spatial_sampler, c(list(n = count), params$spatial))
+
+          if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
+            x <- spatial_result$x + G$x[i]
+            y <- spatial_result$y + G$y[i]
+          } else if (is.numeric(spatial_result) && length(spatial_result) == count) {
+            x <- spatial_result + G$x[i]
+            y <- do.call(spatial_sampler, c(list(n = count), params$spatial)) + G$y[i]
+          } else {
+            stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
+          }
+          t <- do.call(temporal_sampler, c(list(n = count), params$temporal)) + G$t[i]
+
+          parent <- G$id[i]
+          family <- G$family[i]
+          marks <- rep(mark_levels[j], count)
+
+          O_i <- data.frame(x = x, y = y, t = t, parent = parent, gen = l, family = family,
+                            mark = marks)
+          names(O_i)[names(O_i) == "mark"] <- mark_column
+          O_i[[mark_column]] <- factor(O_i[[mark_column]], levels = mark_levels)
+          O_i <- O_i |>
+            sf::st_as_sf(coords = c("x", "y"), crs = crs)
+          O <- rbind(O, O_i)
+        }
       }
     }
     O$id <- (1:nrow(O))+G$id[nrow(G)]
