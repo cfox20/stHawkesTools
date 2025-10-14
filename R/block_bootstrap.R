@@ -33,6 +33,7 @@ extend_data_t_only <- function(hawkes, block_length_t) {
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -58,7 +59,8 @@ extend_data_t_only <- function(hawkes, block_length_t) {
             spatial_region = spatial_region,
             spatial_family = spatial_family,
             temporal_family = temporal_family,
-            covariate_columns = covariate_columns)
+            covariate_columns = covariate_columns,
+            mark_column = mark_column)
 }
 
 
@@ -98,6 +100,7 @@ sample_blocks <- function(hawkes, num_blocks) {
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -130,7 +133,8 @@ sample_blocks <- function(hawkes, num_blocks) {
             spatial_region = spatial_region,
             spatial_family = spatial_family,
             temporal_family = temporal_family,
-            covariate_columns = covariate_columns)
+            covariate_columns = covariate_columns,
+            mark_column = mark_column)
 }
 
 #' Block bootstrap for Hawkes MLE confidence intervals
@@ -187,6 +191,7 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = 
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

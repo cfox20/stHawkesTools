@@ -36,6 +36,7 @@ sample_subregion <- function(hawkes, length) {
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -61,7 +62,9 @@ sample_subregion <- function(hawkes, length) {
     as_hawkes(time_window = time_window,
               spatial_region = spatial_region,
               spatial_family = spatial_family,
-              temporal_family = temporal_family)
+              temporal_family = temporal_family,
+              covariate_columns = covariate_columns,
+              mark_column = mark_column)
 }
 
 #' Block bootstrap for Hawkes MLEs via subsampling
@@ -107,6 +110,7 @@ subsample <- function(hawkes, est, B, length, alpha, parallel = FALSE, max_iters
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

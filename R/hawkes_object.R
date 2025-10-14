@@ -9,6 +9,7 @@
 #' @param time_window Numeric vector of length two defining the observation window.
 #' @param spatial_region `sf` object describing the spatial domain and covariate regions.
 #' @param covariate_columns Optional character vector naming background covariates.
+#' @param mark_column Optional character string naming the mark column for multivariate processes.
 #' @param spatial_family Spatial triggering kernel or list of custom kernel functions.
 #' @param temporal_family Temporal triggering kernel or list of custom kernel functions.
 #'
@@ -18,7 +19,7 @@
 hawkes <- function(data = NULL, params = NULL,
                    time_window = NULL, spatial_region = NULL,
                    spatial_family = NULL, temporal_family = NULL,
-                   covariate_columns = NULL) {
+                   covariate_columns = NULL, mark_column = NULL) {
   if (is.null(data)) {
     data <- data.frame(x = numeric(), y = numeric(), t = numeric()) |>
       sf::st_as_sf(coords = c("x", "y"), crs = NA) |>
@@ -146,6 +147,7 @@ hawkes <- function(data = NULL, params = NULL,
     spatial_region = spatial_region,
     # params = params,
     covariate_columns = covariate_columns,
+    mark_column = mark_column,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
     spatial_sampler = spatial_sampler,
@@ -172,6 +174,7 @@ hawkes <- function(data = NULL, params = NULL,
 #' @param spatial_family Spatial triggering kernel or list of custom kernel helpers.
 #' @param temporal_family Temporal triggering kernel or list of custom kernel helpers.
 #' @param covariate_columns Optional character vector naming background covariates.
+#' @param mark_column Optional character string naming the mark column for multivariate processes.
 #'
 #' @returns A hawkes object.
 #' @export
@@ -194,7 +197,8 @@ hawkes <- function(data = NULL, params = NULL,
 #' )
 #' print(hawkes_df)
 #'
-as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family, covariate_columns = NULL) {
+as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family,
+                      covariate_columns = NULL, mark_column = NULL) {
   if (class(data)[1] == "sf") {
     data <- data |>
       dplyr::mutate(
@@ -215,7 +219,7 @@ as_hawkes <- function(data, time_window, spatial_region, spatial_family, tempora
   hawkes(data = data,
          time_window = time_window, spatial_region = spatial_region,
          spatial_family = spatial_family, temporal_family = temporal_family,
-         covariate_columns = covariate_columns)
+         covariate_columns = covariate_columns, mark_column = mark_column)
 }
 
 
