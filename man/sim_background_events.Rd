@@ -8,7 +8,8 @@ sim_background_events(
   background_rate,
   time_window,
   spatial_region,
-  covariate_columns = NULL
+  covariate_columns = NULL,
+  mark_column = NULL
 )
 }
 \arguments{
@@ -20,6 +21,8 @@ sim_background_events(
 
 \item{covariate_columns}{Optional character vector naming background covariates in
 \code{spatial_region}.}
+
+\item{mark_column}{Optional character string identifying the column used for mark effects.}
 }
 \value{
 A dataframe with generated background events.
@@ -32,5 +35,7 @@ spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 time_window <- c(0, 50)
 background_rate <- -4
 
-sim_background_events(background_rate, time_window, spatial_region)
+background_rate = list(intercept = -4, event_type = c(a = 2, b = 1))
+
+sim_background_events(background_rate, time_window, spatial_region, mark_column = "event_type")
 }

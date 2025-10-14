@@ -12,6 +12,7 @@ plot_intensity(
   coordinates = NULL,
   interpolate = FALSE,
   intensity_type = intensity,
+  point_size = 1.5,
   spatial_zoom = NULL,
   temporal_zoom = NULL,
   zoom_to_most_recent = FALSE,
@@ -33,6 +34,8 @@ plot_intensity(
 \item{interpolate}{If TRUE interpolate linearly, if FALSE (the default) don't interpolate.}
 
 \item{intensity_type}{Name of type of intensity to plot past as un unquoted name. Defaults to intensity for full intensity. Other options include triggering for triggering intensity and background for background intensity.}
+
+\item{point_size}{Numeric to set the size of points for the spatial plot}
 
 \item{spatial_zoom}{Optional numeric vector of length four giving xmin, xmax, ymin, and ymax
 bounds for a spatial zoom window.}

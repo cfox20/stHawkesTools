@@ -10,7 +10,8 @@ as_hawkes(
   spatial_region,
   spatial_family,
   temporal_family,
-  covariate_columns = NULL
+  covariate_columns = NULL,
+  mark_column = NULL
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ geometry and a \code{t} column.}
 \item{temporal_family}{Temporal triggering kernel or list of custom kernel helpers.}
 
 \item{covariate_columns}{Optional character vector naming background covariates.}
+
+\item{mark_column}{Optional character string naming the mark column for multivariate processes.}
 }
 \value{
 A hawkes object.

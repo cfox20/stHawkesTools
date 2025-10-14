@@ -11,7 +11,8 @@ hawkes(
   spatial_region = NULL,
   spatial_family = NULL,
   temporal_family = NULL,
-  covariate_columns = NULL
+  covariate_columns = NULL,
+  mark_column = NULL
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ parameters.}
 \item{temporal_family}{Temporal triggering kernel or list of custom kernel functions.}
 
 \item{covariate_columns}{Optional character vector naming background covariates.}
+
+\item{mark_column}{Optional character string naming the mark column for multivariate processes.}
 }
 \value{
 A hawkes object containing a tibble of events.

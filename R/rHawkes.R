@@ -124,7 +124,9 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' time_window <- c(0, 50)
 #' background_rate <- -4
 #'
-#' sim_background_events(background_rate, time_window, spatial_region)
+#' background_rate = list(intercept = -4, event_type = c(a = 2, b = 1))
+#'
+#' sim_background_events(background_rate, time_window, spatial_region, mark_column = "event_type")
 sim_background_events <- function(background_rate, time_window, spatial_region, covariate_columns = NULL,
                                   mark_column = NULL) {
 
@@ -134,7 +136,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
   mark_effects <- NULL
   background_rate_list <- background_rate
   if (!is.null(mark_column)) {
-    mark_name <- paste0("mark_", mark_column)
+    mark_name <- mark_column
     mark_effects <- background_rate_list[[mark_name]]
     if (is.null(mark_effects)) {
       stop("`background_rate` must include mark-specific coefficients named `", mark_name, "`.")
@@ -324,7 +326,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
           "{mark_column}" := factor(event_types, levels = mark_levels)
         ) |>
         dplyr::relocate(t, .after = .data$y) |>
-        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen) |>
+        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$t) |>
         dplyr::arrange(t)
     }
   }
@@ -364,7 +366,8 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
 #' params <- list(
-#'   background_rate = list(intercept = -4),
+#'   background_rate = list(intercept = -4,
+#'                          event_type = c(a = 1, b = .25)),
 #'   triggering_rate = 0.75,
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2)
@@ -373,7 +376,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #'   params = params,
 #'   time_window = c(0, 50),
 #'   spatial_region = spatial_region,
-#'   background_process = ~ 1,
+#'   background_process = ~ 1 + mark(event_type),
 #'   spatial_burnin = 1
 #' ))
 #'
