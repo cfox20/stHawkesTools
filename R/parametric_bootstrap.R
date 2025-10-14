@@ -72,6 +72,7 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -96,7 +97,7 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
   boot_ests <- furrr::future_map_dfr(1:B, ~ tryCatch({
     sample <- rHawkes(
       hawkes = hawkes,
-      background_process = .background_columns_to_formula(covariate_columns),
+      background_process = .background_columns_to_formula(covariate_columns, mark_column),
       params = est$est,
       temporal_burnin = temporal_burnin,
       spatial_burnin = spatial_burnin,
@@ -125,7 +126,7 @@ parametric_bootstrap <- function(hawkes, est, B, alpha = 0.05, parallel = FALSE,
     boot_samples <- purrr::map(1:B, ~ {
       sample <- rHawkes(
         hawkes = hawkes,
-        background_process = .background_columns_to_formula(covariate_columns),
+        background_process = .background_columns_to_formula(covariate_columns, mark_column),
         params = est$est,
         temporal_burnin = temporal_burnin,
         spatial_burnin = spatial_burnin,

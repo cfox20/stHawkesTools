@@ -50,15 +50,58 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
     stop("`background_process` must not include a response term.")
   }
 
-  cols <- all.vars(background_process)
-  if (length(cols) == 0) NULL else cols
+  terms_obj <- stats::terms(background_process, specials = "mark")
+  specials <- attr(terms_obj, "specials")$mark
+  term_labels <- attr(terms_obj, "term.labels")
+
+  if (!is.null(specials) && length(specials) > 0) {
+    term_labels <- term_labels[-specials]
+  }
+
+  if (length(term_labels) == 0) NULL else term_labels
 }
 
-.background_columns_to_formula <- function(covariate_columns) {
-  if (is.null(covariate_columns) || length(covariate_columns) == 0) {
+.background_formula_mark <- function(background_process) {
+  if (missing(background_process) || is.null(background_process)) {
+    return(NULL)
+  }
+
+  if (!inherits(background_process, "formula")) {
+    stop("`background_process` must be a one-sided formula.")
+  }
+
+  if (length(background_process) != 2L) {
+    stop("`background_process` must not include a response term.")
+  }
+
+  terms_obj <- stats::terms(background_process, specials = "mark")
+  specials <- attr(terms_obj, "specials")$mark
+
+  if (is.null(specials) || length(specials) == 0) {
+    return(NULL)
+  }
+
+  mark_terms <- attr(terms_obj, "term.labels")[specials]
+  mark_vars <- gsub("^mark\\((.*)\\)$", "\\1", mark_terms)
+  if (length(mark_vars) > 1) {
+    stop("Only a single mark() term is currently supported in the background process.")
+  }
+  mark_vars
+}
+
+.background_columns_to_formula <- function(covariate_columns, mark_column = NULL) {
+  terms <- character()
+  if (!is.null(covariate_columns) && length(covariate_columns) > 0) {
+    terms <- c(terms, covariate_columns)
+  }
+  if (!is.null(mark_column) && length(mark_column) > 0) {
+    terms <- c(terms, paste0("mark(", mark_column, ")"))
+  }
+
+  if (length(terms) == 0) {
     stats::as.formula("~ 1")
   } else {
-    stats::as.formula(paste("~", paste(covariate_columns, collapse = " + ")))
+    stats::as.formula(paste("~", paste(terms, collapse = " + ")))
   }
 }
 
@@ -69,6 +112,7 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' @param spatial_region `sf` object defining the simulation region.
 #' @param covariate_columns Optional character vector naming background covariates in
 #'   `spatial_region`.
+#' @param mark_column Optional character string identifying the column used for mark effects.
 #'
 #' @importFrom stats rnorm rpois rexp runif
 #'
@@ -81,42 +125,113 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' background_rate <- -4
 #'
 #' sim_background_events(background_rate, time_window, spatial_region)
-sim_background_events <- function(background_rate, time_window, spatial_region, covariate_columns = NULL) {
+sim_background_events <- function(background_rate, time_window, spatial_region, covariate_columns = NULL,
+                                  mark_column = NULL) {
 
   spatial_area <- spatial_region |> sf::st_area() |> sum()
   t_length <- time_window[2] - time_window[1]
 
-  background_rate <- as.numeric(background_rate)
+  mark_effects <- NULL
+  background_rate_list <- background_rate
+  if (!is.null(mark_column)) {
+    mark_name <- paste0("mark_", mark_column)
+    mark_effects <- background_rate_list[[mark_name]]
+    if (is.null(mark_effects)) {
+      stop("`background_rate` must include mark-specific coefficients named `", mark_name, "`.")
+    }
+    if (is.null(names(mark_effects)) || anyNA(names(mark_effects))) {
+      stop("Mark coefficients must be a named numeric vector specifying event types.")
+    }
+    background_rate_list[[mark_name]] <- NULL
+    mark_effects <- as.numeric(mark_effects)
+    names(mark_effects) <- names(background_rate[[mark_name]])
+  }
+
+  background_rate <- as.numeric(background_rate_list)
 
   if (length(background_rate) == 1) {
-    num_events <- stats::rpois(1, exp(background_rate) * spatial_area * t_length)
+    if (is.null(mark_effects)) {
+      num_events <- stats::rpois(1, exp(background_rate) * spatial_area * t_length)
 
 
-    if (num_events == 0) {
-      background_events <- tibble::tibble(
-                       x = NULL,
-                       y = NULL,
-                       t = NULL,
-                       id = NULL,
-                       parent = NULL,
-                       gen = NULL,
-                       family = NULL)
+      if (num_events == 0) {
+        background_events <- tibble::tibble(
+                         x = NULL,
+                         y = NULL,
+                         t = NULL,
+                         id = NULL,
+                         parent = NULL,
+                         gen = NULL,
+                         family = NULL)
+        return(background_events)
+      }
+
+      sample <- sf::st_sf(geometry = sf::st_sample(spatial_region, num_events, type = "random", exact = TRUE)) |>
+        sf::st_as_sf()
+
+      background_events <- sample |>
+            dplyr::mutate(
+                       x = sf::st_coordinates(sample)[,"X"],
+                       y = sf::st_coordinates(sample)[,"Y"],
+                       t = runif(num_events, time_window[1], time_window[2]),
+                       id = 1:num_events,
+                       parent = 0,
+                       gen = 0,
+                       family = 1:num_events) |>
+        dplyr::relocate(.data$t, .after = .data$y) |>
+        dplyr::arrange(.data$t)
+    } else {
+      mark_levels <- names(mark_effects)
+      event_counts <- stats::rpois(length(mark_effects), exp(background_rate + mark_effects) * spatial_area * t_length)
+      total_events <- sum(event_counts)
+
+      if (total_events == 0) {
+        background_events <- tibble::tibble(
+          x = NULL,
+          y = NULL,
+          t = NULL,
+          id = NULL,
+          parent = NULL,
+          gen = NULL,
+          family = NULL
+        )
+        background_events[[mark_column]] <- factor(levels = mark_levels)
+        background_events[[mark_column]] <- background_events[[mark_column]][0]
+        background_events <- background_events |>
+          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen)
+        return(background_events)
+      }
+
+      sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
+      event_types <- character(total_events)
+      idx <- 1L
+      for (j in seq_along(mark_effects)) {
+        count <- event_counts[j]
+        if (count == 0) next
+        region_sample <- sf::st_sample(spatial_region, size = count, type = "random", exact = TRUE)
+        sample <- c(sample, region_sample)
+        event_types[idx:(idx + count - 1)] <- mark_levels[j]
+        idx <- idx + count
+      }
+
+      sample <- sf::st_sf(geometry = sample) |>
+        sf::st_as_sf()
+
+      background_events <- sample |>
+        dplyr::mutate(
+          x = sf::st_coordinates(sample)[, "X"],
+          y = sf::st_coordinates(sample)[, "Y"],
+          t = runif(total_events, time_window[1], time_window[2]),
+          id = seq_len(total_events),
+          parent = 0,
+          gen = 0,
+          family = seq_len(total_events),
+          "{mark_column}" := factor(event_types, levels = mark_levels)
+        ) |>
+        dplyr::relocate(.data$t, .after = .data$y) |>
+        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen) |>
+        dplyr::arrange(.data$t)
     }
-
-    sample <- sf::st_sf(geometry = sf::st_sample(spatial_region, num_events, type = "random", exact = TRUE)) |>
-      sf::st_as_sf()
-
-    background_events <- sample |>
-          dplyr::mutate(
-                     x = sf::st_coordinates(sample)[,"X"],
-                     y = sf::st_coordinates(sample)[,"Y"],
-                     t = runif(num_events, time_window[1], time_window[2]),
-                     id = 1:num_events,
-                     parent = 0,
-                     gen = 0,
-                     family = 1:num_events) |>
-      dplyr::relocate(.data$t, .after = .data$y) |>
-      dplyr::arrange(.data$t)
 
   } else{
     X <- spatial_region |>
@@ -125,29 +240,93 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
       as.matrix()
     X <- cbind(1, X)
 
-    num_events <- stats::rpois(nrow(X), exp(X %*% background_rate) * t_length * spatial_region$area)
+    base_counts <- exp(X %*% background_rate) * t_length * spatial_region$area
 
-    sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
-    for (i in 1:nrow(spatial_region)) {
-      region_sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
-      while (length(region_sample) != num_events[i]) {
-        region_sample <- c(region_sample, sf::st_sample(spatial_region[i,], size = 1, type = "random", exact = TRUE))
+    if (is.null(mark_effects)) {
+      num_events <- stats::rpois(nrow(X), base_counts)
+
+      sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
+      for (i in 1:nrow(spatial_region)) {
+        region_sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
+        while (length(region_sample) != num_events[i]) {
+          region_sample <- c(region_sample, sf::st_sample(spatial_region[i,], size = 1, type = "random", exact = TRUE))
+        }
+        sample <- c(sample, region_sample)
       }
-      sample <- c(sample, region_sample)
-    }
 
-    background_events <- sf::st_sf(geometry = sample) |>
-      sf::st_as_sf() |>
-      dplyr::mutate(
-        x = sf::st_coordinates(sample)[,"X"],
-        y = sf::st_coordinates(sample)[,"Y"],
-        t = runif(sum(num_events), time_window[1], time_window[2]),
-        id = 1:sum(num_events),
-        parent = 0,
-        gen = 0,
-        family = 1:sum(num_events)) |>
-      dplyr::relocate(t, .after = .data$y) |>
-      dplyr::arrange(t)
+      background_events <- sf::st_sf(geometry = sample) |>
+        sf::st_as_sf() |>
+        dplyr::mutate(
+          x = sf::st_coordinates(sample)[,"X"],
+          y = sf::st_coordinates(sample)[,"Y"],
+          t = runif(sum(num_events), time_window[1], time_window[2]),
+          id = 1:sum(num_events),
+          parent = 0,
+          gen = 0,
+          family = 1:sum(num_events)) |>
+        dplyr::relocate(t, .after = .data$y) |>
+        dplyr::arrange(t)
+    } else {
+      mark_levels <- names(mark_effects)
+      num_events <- matrix(0, nrow = nrow(X), ncol = length(mark_effects))
+      for (j in seq_along(mark_effects)) {
+        num_events[, j] <- stats::rpois(nrow(X), base_counts * exp(mark_effects[j]))
+      }
+
+      total_events <- sum(num_events)
+
+      if (total_events == 0) {
+        background_events <- tibble::tibble(
+          x = NULL,
+          y = NULL,
+          t = NULL,
+          id = NULL,
+          parent = NULL,
+          gen = NULL,
+          family = NULL
+        )
+        background_events[[mark_column]] <- factor(levels = mark_levels)
+        background_events[[mark_column]] <- background_events[[mark_column]][0]
+        background_events <- background_events |>
+          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen)
+        return(background_events)
+      }
+
+      sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
+      event_types <- character(total_events)
+      idx <- 1L
+      for (i in seq_len(nrow(spatial_region))) {
+        for (j in seq_along(mark_effects)) {
+          count <- num_events[i, j]
+          if (count == 0) next
+          region_sample <- sf::st_sfc(crs = sf::st_crs(spatial_region))
+          while (length(region_sample) != count) {
+            region_sample <- c(region_sample, sf::st_sample(spatial_region[i,], size = 1, type = "random", exact = TRUE))
+          }
+          sample <- c(sample, region_sample)
+          event_types[idx:(idx + count - 1)] <- mark_levels[j]
+          idx <- idx + count
+        }
+      }
+
+      sample <- sf::st_sf(geometry = sample) |>
+        sf::st_as_sf()
+
+      background_events <- sample |>
+        dplyr::mutate(
+          x = sf::st_coordinates(sample)[, "X"],
+          y = sf::st_coordinates(sample)[, "Y"],
+          t = runif(total_events, time_window[1], time_window[2]),
+          id = seq_len(total_events),
+          parent = 0,
+          gen = 0,
+          family = seq_len(total_events),
+          "{mark_column}" := factor(event_types, levels = mark_levels)
+        ) |>
+        dplyr::relocate(t, .after = .data$y) |>
+        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen) |>
+        dplyr::arrange(t)
+    }
   }
 
   background_events
@@ -222,10 +401,13 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
 
   if (!missing(background_process)) {
     covariate_columns <- .background_formula_columns(background_process)
+    mark_column <- .background_formula_mark(background_process)
   } else if (!is.null(hawkes)) {
     covariate_columns <- attr(hawkes, "covariate_columns")
+    mark_column <- attr(hawkes, "mark_column")
   } else {
     covariate_columns <- NULL
+    mark_column <- NULL
   }
 
   if (missing(time_window) || is.null(time_window)) {
@@ -270,7 +452,8 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
 
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
   hawkes <- hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
-         spatial_family = spatial_family, temporal_family = temporal_family, covariate_columns = covariate_columns)
+         spatial_family = spatial_family, temporal_family = temporal_family, covariate_columns = covariate_columns,
+         mark_column = mark_column)
 
   # Extract all hawkes object attributes
   attrs <- attributes(hawkes)
@@ -337,7 +520,8 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
   # Generate background events
   data <- G <- sim_background_events(background_rate,
                                      time_window_burnin, spatial_region_burnin,
-                                     covariate_columns = covariate_columns)
+                                     covariate_columns = covariate_columns,
+                                     mark_column = mark_column)
 
 
   # Specify generation l
@@ -345,7 +529,7 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
 
   while (TRUE) {
     O <- hawkes(params = params, time_window = time_window_burnin, spatial_region = spatial_region_burnin,
-                spatial_family = spatial_family, temporal_family = temporal_family) |>
+                spatial_family = spatial_family, temporal_family = temporal_family, mark_column = mark_column) |>
       dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = .data$t)
     sf::st_crs(O) <- crs
 
@@ -371,7 +555,7 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
 
       data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,
                         spatial_family = spatial_family, temporal_family = temporal_family,
-                        covariate_columns = covariate_columns)
+                        covariate_columns = covariate_columns, mark_column = mark_column)
 
       return(data)
     }
@@ -438,7 +622,7 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
 
       data <- as_hawkes(data, time_window = time_window, spatial_region = spatial_region,
                         spatial_family = spatial_family, temporal_family = temporal_family,
-                        covariate_columns = covariate_columns)
+                        covariate_columns = covariate_columns, mark_column = mark_column)
 
       return(data)
     }
