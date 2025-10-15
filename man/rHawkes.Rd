@@ -54,22 +54,32 @@ Generate a Hawkes process
 spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
 params <- list(
-  background_rate = list(intercept = -4),
-  triggering_rate = 0.75,
-  spatial = list(mean = 0, sd = 0.75),
+  background_rate = list(intercept = -4,
+                         event_type = c(a = 1, b = .25, c = .5)),
+  triggering_rate = matrix(c(.4, .15, .05,
+                             .2, .05, .02,
+                             .2, .05, .20),
+                           nrow = 3,
+                           dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+  spatial = list(mean = 0, sd = 0.1),
   temporal = list(rate = 2)
 )
 (hawkes <- rHawkes(
   params = params,
   time_window = c(0, 50),
   spatial_region = spatial_region,
-  background_process = ~ 1,
+  background_process = ~ 1 + mark(event_type),
   spatial_burnin = 1
 ))
 
 params <- list(
-  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-  triggering_rate = 0.5,
+  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1,
+                         event_type = c(a = 1, b = .25, c = .5)),
+  triggering_rate = matrix(c(.4, .15, .05,
+                             .2, .05, .02,
+                             .2, .05, .20),
+                           nrow = 3,
+                           dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
   spatial = list(mean = 0, sd = 0.75),
   temporal = list(rate = 2),
   fixed = list(spatial = "mean")
@@ -79,7 +89,7 @@ rHawkes(
   params = params,
   time_window = c(0, 50),
   spatial_region = example_background_covariates,
-  background_process = ~ X1 + X2,
+  background_process = ~ X1 + X2 + mark(event_type),
   spatial_burnin = 1
 )
 }

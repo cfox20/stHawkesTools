@@ -200,7 +200,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
         background_events[[mark_column]] <- factor(levels = mark_levels)
         background_events[[mark_column]] <- background_events[[mark_column]][0]
         background_events <- background_events |>
-          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen)
+          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$t)
         return(background_events)
       }
 
@@ -231,7 +231,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
           "{mark_column}" := factor(event_types, levels = mark_levels)
         ) |>
         dplyr::relocate(.data$t, .after = .data$y) |>
-        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen) |>
+        dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$t) |>
         dplyr::arrange(.data$t)
     }
 
@@ -290,7 +290,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
         background_events[[mark_column]] <- factor(levels = mark_levels)
         background_events[[mark_column]] <- background_events[[mark_column]][0]
         background_events <- background_events |>
-          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$gen)
+          dplyr::relocate(tidyselect::all_of(mark_column), .after = .data$t)
         return(background_events)
       }
 
@@ -367,12 +367,13 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #'
 #' params <- list(
 #'   background_rate = list(intercept = -4,
-#'                          event_type = c(a = 1, b = .25)),
-#'   triggering_rate = matrix(c(.4, .15,
-#'                              .2, .05),
-#'                            nrow = 2,
-#'                            dimnames = list(c("a", "b"), c("a", "b"))),
-#'   spatial = list(mean = 0, sd = 0.75),
+#'                          event_type = c(a = 1, b = .25, c = .5)),
+#'   triggering_rate = matrix(c(.4, .15, .05,
+#'                              .2, .05, .02,
+#'                              .2, .05, .20),
+#'                            nrow = 3,
+#'                            dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+#'   spatial = list(mean = 0, sd = 0.1),
 #'   temporal = list(rate = 2)
 #' )
 #' (hawkes <- rHawkes(
@@ -384,8 +385,13 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' ))
 #'
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-#'   triggering_rate = 0.5,
+#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1,
+#'                          event_type = c(a = 1, b = .25, c = .5)),
+#'   triggering_rate = matrix(c(.4, .15, .05,
+#'                              .2, .05, .02,
+#'                              .2, .05, .20),
+#'                            nrow = 3,
+#'                            dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
@@ -395,7 +401,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #'   params = params,
 #'   time_window = c(0, 50),
 #'   spatial_region = example_background_covariates,
-#'   background_process = ~ X1 + X2,
+#'   background_process = ~ X1 + X2 + mark(event_type),
 #'   spatial_burnin = 1
 #' )
 rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window, spatial_region,
@@ -520,8 +526,8 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     stop("background_rate must be named list stored within named params list.")
   }
   mark_levels <- NULL
-  if (!is.null(mark_column) && mark_column %in% names(data)) {
-    mark_levels <- levels(data[[mark_column]])
+  if (!is.null(mark_column) && mark_column %in% names(background_rate)) {
+    mark_levels <- colnames(triggering_rate)
   }
 
   if (is.null(mark_column)) {
@@ -574,7 +580,7 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
       dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = .data$t)
     if (!is.null(mark_column)) {
       O <- O |>
-        dplyr::mutate("{mark_column}" := factor(character(), levels = mark_levels), .after = .data$gen)
+        dplyr::mutate("{mark_column}" := factor(character(), levels = mark_levels), .after = .data$t)
     }
     sf::st_crs(O) <- crs
 
