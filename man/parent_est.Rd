@@ -53,4 +53,25 @@ hawkes <- rHawkes(
 )
 
 (parent_est_mat <- parent_est(hawkes, params))
+
+params <- list(
+  background_rate = list(intercept = -4,
+                         event_type = c(a = 1, b = .25, c = .5)),
+  triggering_rate = matrix(c(.4, .15, .05,
+                             .2, .05, .02,
+                             .2, .05, .20),
+                           nrow = 3,
+                           dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+  spatial = list(mean = 0, sd = 0.1),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(
+  params = params,
+  time_window = c(0, 50),
+  spatial_region = spatial_region,
+  background_process = ~ 1 + mark(event_type),
+  spatial_burnin = 1
+)
+
+(parent_est_mat <- parent_est(hawkes, params))
 }

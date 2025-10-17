@@ -43,6 +43,27 @@
 #' )
 #'
 #' (parent_est_mat <- parent_est(hawkes, params))
+#'
+#' params <- list(
+#'   background_rate = list(intercept = -4,
+#'                          event_type = c(a = 1, b = .25, c = .5)),
+#'   triggering_rate = matrix(c(.4, .15, .05,
+#'                              .2, .05, .02,
+#'                              .2, .05, .20),
+#'                            nrow = 3,
+#'                            dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+#'   spatial = list(mean = 0, sd = 0.1),
+#'   temporal = list(rate = 2)
+#' )
+#' hawkes <- rHawkes(
+#'   params = params,
+#'   time_window = c(0, 50),
+#'   spatial_region = spatial_region,
+#'   background_process = ~ 1 + mark(event_type),
+#'   spatial_burnin = 1
+#' )
+#'
+#' (parent_est_mat <- parent_est(hawkes, params))
 parent_est <- function(hawkes, parameters) {
   if(!inherits(hawkes, "hawkes")) stop("hawkes must be a hawkes object")
 
@@ -59,6 +80,7 @@ parent_est <- function(hawkes, parameters) {
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -82,7 +104,43 @@ parent_est <- function(hawkes, parameters) {
   temporal_params <- parameters$temporal
   spatial_params <- parameters$spatial
 
-  background_rate <- as.numeric(background_rate)
+  # Store the mark effects on the background rate
+  mark_effects <- NULL
+  if (!is.null(mark_column) && length(mark_column) > 0 &&
+      !is.null(background_rate[[mark_column]])) {
+    mark_effects <- background_rate[[mark_column]]
+    background_rate[[mark_column]] <- NULL
+
+    if (!is.null(mark_effects)) {
+      mark_effect_names <- names(mark_effects)
+      mark_effects <- as.numeric(mark_effects)
+      if (!is.null(mark_effect_names)) {
+        names(mark_effects) <- mark_effect_names
+      }
+    }
+  } else{
+    mark_effects <- 0
+  }
+  # Store the event_type offset for the background rate at each event
+  if (!is.null(mark_effects)) {
+    background_mark_offset <- mark_effects[hawkes$event_type]
+  } else{
+    background_mark_offset <- 0
+  }
+
+  if (length(background_rate) > 0) {
+    background_rate <- as.numeric(background_rate)
+  } else {
+    background_rate <- numeric(0)
+  }
+
+  # Make a matrix of the triggering rate between each event. If univariate, all values are the same
+  if (is.matrix(triggering_rate)){
+    triggering_matrix <- triggering_rate[hawkes$event_type, hawkes$event_type, drop = FALSE]
+  } else {
+    triggering_matrix <- matrix(triggering_rate, nrow = nrow(hawkes), ncol = nrow(hawkes))
+  }
+  triggering_matrix[upper.tri(triggering_matrix, diag = TRUE)] <- 0
 
   # Store the time and space differences between each point in diagonal matrices
   x_diff <- outer(hawkes$x, hawkes$x, `-`)
@@ -95,12 +153,12 @@ parent_est <- function(hawkes, parameters) {
   # Compute a matrix of the triggering intensities
   if (!spatial_is_separable) {
     s_diff <- cbind(x_diff, y_diff)
-    g_mat <- {triggering_rate *
+    g_mat <- {triggering_matrix *
         do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
         do.call(spatial_pdf, c(list(x = s_diff), parameters$spatial))
     }
   } else {
-    g_mat <- {triggering_rate *
+    g_mat <- {triggering_matrix *
         do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
         do.call(spatial_pdf, c(list(x = x_diff), parameters$spatial)) *
         do.call(spatial_pdf, c(list(x = y_diff), parameters$spatial))
@@ -109,12 +167,12 @@ parent_est <- function(hawkes, parameters) {
   g_mat[upper.tri(g_mat, diag = TRUE)] <- 0
 
   # Store the values of the complete likelihood at each point
-  lambda_i <- exp(as.numeric(X %*% background_rate)) + rowSums(g_mat)
+  lambda_i <- exp(as.numeric(X %*% background_rate + background_mark_offset)) + rowSums(g_mat)
   lambda_mat <- matrix(lambda_i, nrow = length(lambda_i), ncol = length(lambda_i), byrow = FALSE)
 
   # Estimate the parent matrix
   parent_mat <- g_mat / lambda_mat
-  diag(parent_mat) <-exp(as.numeric(X %*% background_rate)) / diag(lambda_mat)
+  diag(parent_mat) <- exp(as.numeric(X %*% background_rate + background_mark_offset)) / diag(lambda_mat)
   parent_mat[upper.tri(parent_mat)] <- 0
 
   colnames(parent_mat) <- 1:nrow(hawkes)
@@ -167,6 +225,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
   covariate_columns    <- attrs$covariate_columns
+  mark_column <- attrs$mark_column
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

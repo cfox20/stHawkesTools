@@ -80,7 +80,7 @@ params <- list(
                              .2, .05, .20),
                            nrow = 3,
                            dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
-  spatial = list(mean = 0, sd = 0.75),
+  spatial = list(mean = 0, sd = 0.25),
   temporal = list(rate = 2),
   fixed = list(spatial = "mean")
 )
