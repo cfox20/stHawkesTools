@@ -19,9 +19,9 @@ Resample data with moving blocks
 }
 \examples{
 params <- list(
-  background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+  background_rate = list(intercept = -4.5, z = 1),
   triggering_rate = 0.5,
-  spatial = list(mean = 0, sd = 0.25),
+  spatial = list(mean = 0, sd = 0.75),
   temporal = list(rate = 2),
   fixed = list(spatial = "mean")
 )
@@ -30,7 +30,7 @@ hawkes <- rHawkes(
   params,
   c(0, 50),
   example_background_covariates,
-  covariate_columns = c("X1", "X2"),
+  covariate_columns = "z",
   spatial_burnin = 1
 )
 

@@ -197,7 +197,7 @@ highlights how the covariate concentrates activity in the middle of the region,
 while the temporal profile at the centre of the window shows how excitation
 builds as events occur.
 
-```{r fitted-intensity}
+```{r fitted-intensity, fig.height=7, fig.width=7}
 intensity_views <- plot_intensity(
   hawkes,
   est,

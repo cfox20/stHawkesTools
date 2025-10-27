@@ -9,9 +9,9 @@
 #'
 #' @examples
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
+#'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -20,7 +20,7 @@
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #' extend_data_t_only(hawkes, 5)
@@ -72,9 +72,9 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 #'
 #' @examples
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
+#'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -83,7 +83,7 @@ extend_data_t_only <- function(hawkes, block_length_t) {
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #'
@@ -149,9 +149,9 @@ sample_blocks <- function(hawkes, num_blocks) {
 #'
 #' @examples
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
+#'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -160,7 +160,7 @@ sample_blocks <- function(hawkes, num_blocks) {
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
@@ -169,6 +169,7 @@ sample_blocks <- function(hawkes, num_blocks) {
 #'   hawkes,
 #'   est,
 #'   B = 2,
+#'   #B = 1000,
 #'   num_blocks = 25,
 #'   alpha = 0.05,
 #'   parallel = FALSE,

@@ -59,7 +59,7 @@ params <- list(
 ))
 
 params <- list(
-  background_rate = list(intercept = -4, z = .00005),
+  background_rate = list(intercept = -5, z = 1),
   triggering_rate = 0.5,
   spatial = list(mean = 0, sd = 0.75),
   temporal = list(rate = 2),

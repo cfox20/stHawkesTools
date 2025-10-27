@@ -9,9 +9,9 @@
 #'
 #' @examples
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
+#'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -20,7 +20,7 @@
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
@@ -150,9 +150,9 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
 #'
 #' @examples
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
+#'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
 #'   fixed = list(spatial = "mean")
 #' )
@@ -161,16 +161,23 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
 #'
-#' future::plan(future::multisession, workers = future::availableCores())
+#' #future::plan(future::multisession, workers = future::availableCores())
 #'
-#' cluster_bootstrap(hawkes, est, B = 2, alpha = .05, parallel = TRUE, boundary = c(.5,3))
+#' cluster_bootstrap(hawkes,
+#'                   est,
+#'                   B = 2,
+#'                   #B = 1000,
+#'                   alpha = .05,
+#'                   #parallel = TRUE,
+#'                   parallel = FALSE,
+#'                   boundary = c(.5,3))
 #'
-#' future::plan(future::sequential)
+#' #future::plan(future::sequential)
 cluster_bootstrap <- function(hawkes, est, B, alpha = .05, parallel = FALSE, max_iters = 500, boundary = NULL) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 
