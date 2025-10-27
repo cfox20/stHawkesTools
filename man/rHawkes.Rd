@@ -6,25 +6,22 @@
 \usage{
 rHawkes(
   hawkes = NULL,
-  background_process = ~1,
-  params,
+  background_formula = ~1,
+  mark_column = NULL,
+  parameters,
   time_window,
   spatial_region,
-  temporal_burnin = NULL,
-  spatial_burnin = NULL,
-  temporal_family = NULL,
-  spatial_family = NULL
+  temporal_burnin = (time_window[2] - time_window[1])/(10),
+  spatial_burnin = sum(as.numeric(sf::st_area(spatial_region)))^0.25,
+  temporal_family = "Exponential",
+  spatial_family = "Gaussian"
 )
 }
 \arguments{
 \item{hawkes}{Optional template \code{hawkes} object supplying process metadata. When
 omitted, \code{time_window}, \code{spatial_region}, and kernel families must be provided.}
 
-\item{background_process}{One-sided formula specifying background covariates.
-When omitted and \code{hawkes} is provided, covariate information stored on the
-object is reused.}
-
-\item{params}{Named list containing background, triggering, spatial, and temporal
+\item{parameters}{Named list containing background, triggering, spatial, and temporal
 parameters. See the examples for the expected structure.}
 
 \item{time_window}{Numeric vector of length two specifying the simulated window.
@@ -43,6 +40,10 @@ on \code{hawkes} when supplied, otherwise "Exponential".}
 
 \item{spatial_family}{Spatial triggering kernel. Defaults to the family stored on
 \code{hawkes} when supplied, otherwise "Gaussian".}
+
+\item{background_process}{One-sided formula specifying background covariates.
+When omitted and \code{hawkes} is provided, covariate information stored on the
+object is reused.}
 }
 \value{
 A hawkes object with a generated Hawkes process.
@@ -53,10 +54,10 @@ Generate a Hawkes process
 \examples{
 spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 
-params <- list(
+parameters <- list(
   background_rate = list(intercept = -4,
                          event_type = c(a = 1, b = .25, c = .5)),
-  triggering_rate = matrix(c(.4, .15, .05,
+  branching_ratio = matrix(c(.4, .15, .05,
                              .2, .05, .02,
                              .2, .05, .20),
                            nrow = 3,
@@ -65,31 +66,32 @@ params <- list(
   temporal = list(rate = 2)
 )
 (hawkes <- rHawkes(
-  params = params,
+  parameters = parameters,
   time_window = c(0, 50),
   spatial_region = spatial_region,
   background_process = ~ 1 + mark(event_type),
   spatial_burnin = 1
 ))
 
-params <- list(
+parameters <- list(
   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1,
-                         event_type = c(a = 1, b = .25, c = .5)),
-  triggering_rate = matrix(c(.4, .15, .05,
-                             .2, .05, .02,
-                             .2, .05, .20),
-                           nrow = 3,
-                           dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+                         event_type_a = 1, event_type_b = .25),
+  branching_ratio = matrix(c(.4, .15,
+                             .2, .05),
+                           nrow = 2,
+                           dimnames = list(c("a", "b"), c("a", "b"))),
   spatial = list(mean = 0, sd = 0.25),
   temporal = list(rate = 2),
+
   fixed = list(spatial = "mean")
 )
+
 data("example_background_covariates")
-rHawkes(
-  params = params,
+hawkes <- rHawkes(
+  parameters = parameters,
   time_window = c(0, 50),
   spatial_region = example_background_covariates,
-  background_process = ~ X1 + X2 + mark(event_type),
+  background_formula = ~ X1 + X2 + event_type,
   spatial_burnin = 1
 )
 }

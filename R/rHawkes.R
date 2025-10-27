@@ -37,73 +37,6 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
     cbind(covariates)
 }
 
-.background_formula_columns <- function(background_process) {
-  if (missing(background_process) || is.null(background_process)) {
-    return(NULL)
-  }
-
-  if (!inherits(background_process, "formula")) {
-    stop("`background_process` must be a one-sided formula.")
-  }
-
-  if (length(background_process) != 2L) {
-    stop("`background_process` must not include a response term.")
-  }
-
-  terms_obj <- stats::terms(background_process, specials = "mark")
-  specials <- attr(terms_obj, "specials")$mark
-  term_labels <- attr(terms_obj, "term.labels")
-
-  if (!is.null(specials) && length(specials) > 0) {
-    term_labels <- term_labels[-specials]
-  }
-
-  if (length(term_labels) == 0) NULL else term_labels
-}
-
-.background_formula_mark <- function(background_process) {
-  if (missing(background_process) || is.null(background_process)) {
-    return(NULL)
-  }
-
-  if (!inherits(background_process, "formula")) {
-    stop("`background_process` must be a one-sided formula.")
-  }
-
-  if (length(background_process) != 2L) {
-    stop("`background_process` must not include a response term.")
-  }
-
-  terms_obj <- stats::terms(background_process, specials = "mark")
-  specials <- attr(terms_obj, "specials")$mark
-
-  if (is.null(specials) || length(specials) == 0) {
-    return(NULL)
-  }
-
-  mark_terms <- attr(terms_obj, "term.labels")[specials]
-  mark_vars <- gsub("^mark\\((.*)\\)$", "\\1", mark_terms)
-  if (length(mark_vars) > 1) {
-    stop("Only a single mark() term is currently supported in the background process.")
-  }
-  mark_vars
-}
-
-.background_columns_to_formula <- function(covariate_columns, mark_column = NULL) {
-  terms <- character()
-  if (!is.null(covariate_columns) && length(covariate_columns) > 0) {
-    terms <- c(terms, covariate_columns)
-  }
-  if (!is.null(mark_column) && length(mark_column) > 0) {
-    terms <- c(terms, paste0("mark(", mark_column, ")"))
-  }
-
-  if (length(terms) == 0) {
-    stats::as.formula("~ 1")
-  } else {
-    stats::as.formula(paste("~", paste(terms, collapse = " + ")))
-  }
-}
 
 #' Simulate background events
 #'
@@ -127,8 +60,7 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' background_rate = list(intercept = -4, event_type = c(a = 2, b = 1))
 #'
 #' sim_background_events(background_rate, time_window, spatial_region, mark_column = "event_type")
-sim_background_events <- function(background_rate, time_window, spatial_region, covariate_columns = NULL,
-                                  mark_column = NULL) {
+sim_background_events <- function(background_rate, background_formula, time_window, spatial_region, mark_column = NULL) {
 
   spatial_area <- spatial_region |> sf::st_area() |> sum()
   t_length <- time_window[2] - time_window[1]
@@ -343,7 +275,7 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' @param background_process One-sided formula specifying background covariates.
 #'   When omitted and `hawkes` is provided, covariate information stored on the
 #'   object is reused.
-#' @param params Named list containing background, triggering, spatial, and temporal
+#' @param parameters Named list containing background, triggering, spatial, and temporal
 #'   parameters. See the examples for the expected structure.
 #' @param time_window Numeric vector of length two specifying the simulated window.
 #'   Defaults to the window stored on `hawkes` when available.
@@ -365,10 +297,10 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #' @examples
 #' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
 #'
-#' params <- list(
+#' parameters <- list(
 #'   background_rate = list(intercept = -4,
 #'                          event_type = c(a = 1, b = .25, c = .5)),
-#'   triggering_rate = matrix(c(.4, .15, .05,
+#'   branching_ratio = matrix(c(.4, .15, .05,
 #'                              .2, .05, .02,
 #'                              .2, .05, .20),
 #'                            nrow = 3,
@@ -377,50 +309,47 @@ sim_background_events <- function(background_rate, time_window, spatial_region, 
 #'   temporal = list(rate = 2)
 #' )
 #' (hawkes <- rHawkes(
-#'   params = params,
+#'   parameters = parameters,
 #'   time_window = c(0, 50),
 #'   spatial_region = spatial_region,
 #'   background_process = ~ 1 + mark(event_type),
 #'   spatial_burnin = 1
 #' ))
 #'
-#' params <- list(
+#' parameters <- list(
 #'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1,
-#'                          event_type = c(a = 1, b = .25, c = .5)),
-#'   triggering_rate = matrix(c(.4, .15, .05,
-#'                              .2, .05, .02,
-#'                              .2, .05, .20),
-#'                            nrow = 3,
-#'                            dimnames = list(c("a", "b", "c"), c("a", "b", "c"))),
+#'                          event_type_a = 1, event_type_b = .25),
+#'   branching_ratio = matrix(c(.4, .15,
+#'                              .2, .05),
+#'                            nrow = 2,
+#'                            dimnames = list(c("a", "b"), c("a", "b"))),
 #'   spatial = list(mean = 0, sd = 0.25),
 #'   temporal = list(rate = 2),
+#'
 #'   fixed = list(spatial = "mean")
 #' )
+#'
 #' data("example_background_covariates")
-#' rHawkes(
-#'   params = params,
+#' hawkes <- rHawkes(
+#'   parameters = parameters,
 #'   time_window = c(0, 50),
 #'   spatial_region = example_background_covariates,
-#'   background_process = ~ X1 + X2 + mark(event_type),
+#'   background_formula = ~ X1 + X2 + event_type,
 #'   spatial_burnin = 1
 #' )
-rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window, spatial_region,
-                    temporal_burnin = NULL, spatial_burnin = NULL,
-                    temporal_family = NULL, spatial_family = NULL) {
+rHawkes <- function(hawkes = NULL, background_formula = ~ 1, mark_column = NULL,
+                    parameters, time_window, spatial_region,
+                    temporal_burnin = (time_window[2] - time_window[1]) / (10),
+                    spatial_burnin = sum(sf::st_area(spatial_region) |> as.numeric())^.25,
+                    temporal_family = "Exponential", spatial_family = "Gaussian") {
   if (!is.null(hawkes) && class(hawkes)[1] != "hawkes") {
     stop("hawkes must be a hawkes object or NULL.")
   }
 
-  if (!missing(background_process)) {
-    covariate_columns <- .background_formula_columns(background_process)
-    mark_column <- .background_formula_mark(background_process)
-  } else if (!is.null(hawkes)) {
-    covariate_columns <- attr(hawkes, "covariate_columns")
-    mark_column <- attr(hawkes, "mark_column")
-  } else {
-    covariate_columns <- NULL
-    mark_column <- NULL
-  }
+  covariates <- background_formula != (~ 1)
+
+  covariate_columns <- all.vars(background_formula)
+  covariate_columns <- setdiff(covariate_columns, mark_column)
 
   if (missing(time_window) || is.null(time_window)) {
     if (!is.null(hawkes)) {
@@ -438,46 +367,37 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     }
   }
 
-  if (is.null(temporal_family)) {
-    if (!is.null(hawkes)) {
-      temporal_family <- attr(hawkes, "temporal_family")
-    } else {
-      temporal_family <- "Exponential"
-    }
-  }
-
-  if (is.null(spatial_family)) {
-    if (!is.null(hawkes)) {
-      spatial_family <- attr(hawkes, "spatial_family")
-    } else {
-      spatial_family <- "Gaussian"
-    }
-  }
-
-  if (is.null(temporal_burnin)) {
-    temporal_burnin <- (time_window[2] - time_window[1]) / (10)
-  }
-
-  if (is.null(spatial_burnin)) {
-    spatial_burnin <- sum(sf::st_area(spatial_region) |> as.numeric())^.25
-  }
 
   # Create empty hawkes object and unpack to assign triggering sampler functions using the hawkes constructor
-  hawkes <- hawkes(params = params, time_window = time_window, spatial_region = spatial_region,
-         spatial_family = spatial_family, temporal_family = temporal_family, covariate_columns = covariate_columns,
-         mark_column = mark_column)
+  hawkes <- hawkes(background_formula = background_formula,
+                   mark_column = mark_column,
+                   time_window = time_window,
+                   spatial_region = spatial_region,
+                   spatial_family = spatial_family,
+                   temporal_family = temporal_family,
+                   parameters = parameters)
 
   # Extract all hawkes object attributes
   attrs <- attributes(hawkes)
 
   # Assign all attributes to variables in the function environment
-  spatial_sampler    <- attrs$spatial_sampler
-  temporal_sampler    <- attrs$temporal_sampler
-  spatial_pdf  <- attrs$spatial_pdf
+  covariate_matrix <- attrs$covariate_matrix
+  branching_matrix <- attrs$branching_matrix
+  background_formula <- attrs$background_formula
+  mark_column <- attrs$mark_column
+  time_window <- attrs$time_window
+  spatial_region <- attrs$spatial_region
+  parameters <- attrs$parameters
+  spatial_family <- attrs$spatial_family
+  temporal_family <- attrs$temporal_family
+  spatial_sampler <- attrs$spatial_sampler
+  spatial_pdf <- attrs$spatial_pdf
+  spatial_cdf <- attrs$spatial_cdf
   temporal_pdf <- attrs$temporal_pdf
-  spatial_cdf  <- attrs$spatial_cdf
   temporal_cdf <- attrs$temporal_cdf
-  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+  temporal_sampler <- attrs$temporal_sampler
+  spatial_is_separable <- attrs$spatial_is_separable
+
 
 
 
@@ -517,57 +437,22 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
   time_window_burnin <- time_window
   time_window_burnin[2] <- time_window[2] + temporal_burnin
 
-  background_rate <- params$background_rate
-  triggering_rate <- params$triggering_rate
-  temporal_params <- params$temporal
-  spatial_params <- params$spatial
+  background_rate <- parameters$background_rate
+  branching_ratio <- parameters$branching_ratio
+  temporal_parameters <- parameters$temporal
+  spatial_parameters <- parameters$spatial
 
   if (!is.list(background_rate)) {
-    stop("background_rate must be named list stored within named params list.")
+    stop("background_rate must be named list stored within named parameters list.")
   }
   mark_levels <- NULL
   if (!is.null(mark_column) && mark_column %in% names(background_rate)) {
-    mark_levels <- colnames(triggering_rate)
-  }
-
-  if (is.null(mark_column)) {
-    if (!((triggering_rate >= 0) && (triggering_rate < 1) && (is.numeric(triggering_rate)))) {
-      stop("triggering_rate must be a numeric value between 0 and 1.")
-    }
-  } else {
-    if (is.matrix(triggering_rate) || is.data.frame(triggering_rate)) {
-      triggering_rate <- as.matrix(triggering_rate)
-    } else if (length(triggering_rate) == 1L && is.numeric(triggering_rate)) {
-      triggering_rate <- matrix(triggering_rate,
-                                nrow = length(mark_levels),
-                                ncol = length(mark_levels),
-                                dimnames = list(mark_levels, mark_levels))
-    } else {
-      stop("triggering_rate must be a numeric scalar or matrix when marks are supplied.")
-    }
-
-    if (is.null(mark_levels)) {
-      stop("Mark levels could not be determined from the simulated data.")
-    }
-
-    if (is.null(rownames(triggering_rate)) || is.null(colnames(triggering_rate))) {
-      stop("triggering_rate matrix must have row and column names matching mark levels.")
-    }
-
-    if (!all(mark_levels %in% rownames(triggering_rate)) ||
-        !all(mark_levels %in% colnames(triggering_rate))) {
-      stop("triggering_rate matrix row and column names must include all mark levels.")
-    }
-
-    if (any(triggering_rate < 0) || any(triggering_rate >= 1)) {
-      stop("triggering_rate matrix entries must be numeric values between 0 and 1.")
-    }
+    mark_levels <- colnames(branching_ratio)
   }
 
   # Generate background events
-  data <- G <- sim_background_events(background_rate,
+  data <- G <- sim_background_events(background_rate, background_formula = background_formula,
                                      time_window_burnin, spatial_region_burnin,
-                                     covariate_columns = covariate_columns,
                                      mark_column = mark_column)
 
 
@@ -575,7 +460,7 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
   l <- 0
 
   while (TRUE) {
-    O <- hawkes(params = params, time_window = time_window_burnin, spatial_region = spatial_region_burnin,
+    O <- hawkes(parameters = parameters, time_window = time_window_burnin, spatial_region = spatial_region_burnin,
                 spatial_family = spatial_family, temporal_family = temporal_family, mark_column = mark_column) |>
       dplyr::mutate(parent = numeric(), gen = numeric(), family = numeric(), .after = .data$t)
     if (!is.null(mark_column)) {
@@ -587,14 +472,14 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     l <- l+1
 
     if (is.null(mark_column)) {
-      N <- stats::rpois(nrow(G), triggering_rate)
+      N <- stats::rpois(nrow(G), branching_ratio)
       total_children <- sum(N)
     } else {
       parent_marks <- as.character(G[[mark_column]])
       N <- vector("list", length = nrow(G))
       total_children <- 0L
       for (i in seq_len(nrow(G))) {
-        child_rates <- triggering_rate[parent_marks[i], mark_levels]
+        child_rates <- branching_ratio[parent_marks[i], mark_levels]
         child_counts <- stats::rpois(length(child_rates), child_rates)
         N[[i]] <- child_counts
         total_children <- total_children + sum(child_counts)
@@ -626,18 +511,18 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
     for (i in 1:nrow(G)) {
       if (is.null(mark_column)) {
         if (N[i] > 0) {
-          spatial_result <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial))
+          spatial_result <- do.call(spatial_sampler, c(list(n = N[i]), parameters$spatial))
 
           if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
             x <- spatial_result$x + G$x[i]
             y <- spatial_result$y + G$y[i]
           } else if (is.numeric(spatial_result) && length(spatial_result) == N[i]) {
             x <- spatial_result + G$x[i]
-            y <- do.call(spatial_sampler, c(list(n = N[i]), params$spatial)) + G$y[i]
+            y <- do.call(spatial_sampler, c(list(n = N[i]), parameters$spatial)) + G$y[i]
           } else {
             stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
           }
-          t <- do.call(temporal_sampler, c(list(n = N[i]), params$temporal)) + G$t[i]
+          t <- do.call(temporal_sampler, c(list(n = N[i]), parameters$temporal)) + G$t[i]
 
           parent <- G$id[i]
           family <- G$family[i]
@@ -654,18 +539,18 @@ rHawkes <- function(hawkes = NULL, background_process = ~ 1, params, time_window
           count <- child_counts[j]
           if (count == 0) next
 
-          spatial_result <- do.call(spatial_sampler, c(list(n = count), params$spatial))
+          spatial_result <- do.call(spatial_sampler, c(list(n = count), parameters$spatial))
 
           if (is.data.frame(spatial_result) && all(c("x", "y") %in% names(spatial_result))) {
             x <- spatial_result$x + G$x[i]
             y <- spatial_result$y + G$y[i]
           } else if (is.numeric(spatial_result) && length(spatial_result) == count) {
             x <- spatial_result + G$x[i]
-            y <- do.call(spatial_sampler, c(list(n = count), params$spatial)) + G$y[i]
+            y <- do.call(spatial_sampler, c(list(n = count), parameters$spatial)) + G$y[i]
           } else {
             stop("Invalid return from spatial_kernel: must be either vector or data.frame with x and y")
           }
-          t <- do.call(temporal_sampler, c(list(n = count), params$temporal)) + G$t[i]
+          t <- do.call(temporal_sampler, c(list(n = count), parameters$temporal)) + G$t[i]
 
           parent <- G$id[i]
           family <- G$family[i]

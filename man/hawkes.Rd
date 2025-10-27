@@ -6,20 +6,20 @@
 \usage{
 hawkes(
   data = NULL,
-  params = NULL,
+  location_time_columns = c("x", "y", "t"),
+  background_formula = ~1,
+  mark_column = NULL,
   time_window = NULL,
   spatial_region = NULL,
   spatial_family = NULL,
   temporal_family = NULL,
-  covariate_columns = NULL,
-  mark_column = NULL
+  parameters = NULL
 )
 }
 \arguments{
 \item{data}{Data frame or \code{sf} object with columns \code{x}, \code{y}, and \code{t}. Defaults to \code{NULL}.}
 
-\item{params}{Optional named list holding background, triggering, spatial, and temporal
-parameters.}
+\item{mark_column}{Optional character string naming the mark column for multivariate processes.}
 
 \item{time_window}{Numeric vector of length two defining the observation window.}
 
@@ -29,9 +29,10 @@ parameters.}
 
 \item{temporal_family}{Temporal triggering kernel or list of custom kernel functions.}
 
-\item{covariate_columns}{Optional character vector naming background covariates.}
+\item{params}{Optional named list holding background, triggering, spatial, and temporal
+parameters.}
 
-\item{mark_column}{Optional character string naming the mark column for multivariate processes.}
+\item{covariate_columns}{Optional character vector naming background covariates.}
 }
 \value{
 A hawkes object containing a tibble of events.

@@ -1,3 +1,5 @@
+
+
 # Functions to cosntruct a hawkes object
 #
 
@@ -16,10 +18,16 @@
 #' @returns A hawkes object containing a tibble of events.
 #' @export
 #'
-hawkes <- function(data = NULL, params = NULL,
-                   time_window = NULL, spatial_region = NULL,
-                   spatial_family = NULL, temporal_family = NULL,
-                   covariate_columns = NULL, mark_column = NULL) {
+hawkes <- function(data = NULL,
+                   location_time_columns = c("x", "y", "t"),
+                   background_formula = ~ 1,
+                   mark_column = NULL,
+                   time_window = NULL,
+                   spatial_region = NULL,
+                   spatial_family = NULL,
+                   temporal_family = NULL,
+                   parameters = NULL) {
+
   if (is.null(data)) {
     data <- data.frame(x = numeric(), y = numeric(), t = numeric()) |>
       sf::st_as_sf(coords = c("x", "y"), crs = NA) |>
@@ -27,19 +35,38 @@ hawkes <- function(data = NULL, params = NULL,
       dplyr::mutate(x = numeric(), y = numeric(), .before = t)
   }
 
+  if (!all(location_time_columns %in% names(data))) {
+    stop("data must contain columns matching the location_time_columns argument.")
+  }
+
+  if (inherits(data, "sf")) {
+    data <- data |>
+      dplyr::mutate(
+        x = sf::st_coordinates(data)[,1],
+        y = sf::st_coordinates(data)[,2],
+        .before = all_of(location_time_columns[3])
+      ) |>
+      dplyr::arrange(dplyr::all_of(location_time_columns[3]))
+  } else{
+    data <- sf::st_as_sf(data, coords = c(location_time_columns[1], location_time_columns[2]))
+    data <- data |>
+      dplyr::mutate(
+        x = sf::st_coordinates(data)[,1],
+        y = sf::st_coordinates(data)[,2],
+        .before = all_of(location_time_columns[3])
+      ) |>
+      dplyr::arrange(dplyr::all_of(location_time_columns[3]))
+  }
+
 
 # Argument Checks ---------------------------------------------------------
 
-  if (class(data)[1] != "sf" | !all(c("x", "y", "t") %in% names(data))) {
-    stop("data must be a sf object and contain columns x, y, and t.")
-  }
-
   if (is.null(spatial_family)) {
-    stop("Provide spatial triggering family.")
+    stop("Provide spatial self-excitation family.")
   }
 
   if (is.null(temporal_family)) {
-    stop("Provide temporal triggering family.")
+    stop("Provide temporal self-excitation family.")
   }
 
   if (!is.null(spatial_region) && !(class(spatial_region)[1] == "sf")) {
@@ -51,7 +78,7 @@ hawkes <- function(data = NULL, params = NULL,
     stop("'time_window' must be a numeric vector defining the observed time window (e.g. c(0, 100))")
   }
 
-  if (!is.null(params) && (!is.list(params) | is.null(params$background_rate) | is.null(params$triggering_rate) | is.null(params$spatial) | is.null(params$temporal))) {
+  if (!is.null(parameters) && (!is.list(parameters) | is.null(parameters$background_rate) | is.null(parameters$branching_ratio) | is.null(parameters$spatial) | is.null(parameters$temporal))) {
     stop("Missing parameters. Make sure all components are provided in the params named list.")
   }
 
@@ -123,31 +150,100 @@ hawkes <- function(data = NULL, params = NULL,
     }
   }
 
-  if (!is.null(params) && !all(names(params$spatial) %in% methods::formalArgs(spatial_pdf))) {
+  if (!is.null(parameters) && !all(names(parameters$spatial) %in% methods::formalArgs(spatial_pdf))) {
     stop(paste("Spatial parameter names are missing in spatial density function arguments."))
   }
-  if (!is.null(params) && !all(names(params$temporal) %in% methods::formalArgs(temporal_pdf))) {
+  if (!is.null(parameters) && !all(names(parameters$temporal) %in% methods::formalArgs(temporal_pdf))) {
     stop(paste("Spatial parameter names are missing in temporal density function arguments."))
   }
 
-  if (!is.null(params) && !all(names(params$spatial) %in% methods::formalArgs(spatial_sampler))) {
+  if (!is.null(parameters) && !all(names(parameters$spatial) %in% methods::formalArgs(spatial_sampler))) {
     stop(paste("Spatial parameter names are missing in spatial sampler function arguments."))
   }
-  if (!is.null(params) && !all(names(params$temporal) %in% methods::formalArgs(temporal_sampler))) {
+  if (!is.null(parameters) && !all(names(parameters$temporal) %in% methods::formalArgs(temporal_sampler))) {
     stop(paste("Spatial parameter names are missing in temporal sampler function arguments."))
+  }
+
+  # --- Validate parameters structure -----------------------------------------
+  if (!is.null(parameters)) {
+
+    # 1. Must be a list
+    if (!is.list(parameters)) {
+      stop("`parameters` must be a list.", call. = FALSE)
+    }
+
+    # 2. Required top-level names
+    required_names <- c("background_rate", "branching_ratio", "spatial", "temporal")
+    missing_names <- setdiff(required_names, names(parameters))
+    if (length(missing_names) > 0) {
+      stop("`parameters` is missing required components: ",
+           paste(missing_names, collapse = ", "), call. = FALSE)
+    }
+
+    # 4. Match kernel argument names ------------------------------------------
+    spatial_args  <- methods::formalArgs(spatial_pdf)
+    temporal_args <- methods::formalArgs(temporal_pdf)
+
+    bad_spatial  <- setdiff(names(parameters$spatial),  spatial_args)
+    bad_temporal <- setdiff(names(parameters$temporal), temporal_args)
+
+    if (length(bad_spatial) > 0) {
+      stop("Unknown spatial parameter name(s): ",
+           paste(bad_spatial, collapse = ", "), "\nValid names are: ",
+           paste(spatial_args, collapse = ", "), call. = FALSE)
+    }
+    if (length(bad_temporal) > 0) {
+      stop("Unknown temporal parameter name(s): ",
+           paste(bad_temporal, collapse = ", "), "\nValid names are: ",
+           paste(temporal_args, collapse = ", "), call. = FALSE)
+    }
+
+    # 5. Optional: check values are numeric and positive
+    if (!all(sapply(parameters$spatial, is.numeric))) {
+      stop("All spatial parameters must be numeric.", call. = FALSE)
+    }
+    if (!all(sapply(parameters$temporal, is.numeric))) {
+      stop("All temporal parameters must be numeric.", call. = FALSE)
+    }
+
+    # (optional) branching ratio sanity check
+    if (any(parameters$branching_ratio >= 1)) {
+      warning("Triggering rate (branching ratio) ≥ 1 may lead to an unstable process.", call. = FALSE)
+    }
+  }
+
+
+  if (nrow(data) > 1) {
+  # Make matrix of covariate values for the observed data
+    covariate_matrix <- .construct_background_covariate_matrix(background_formula = background_formula, data)
+  } else{
+    covariate_matrix <- NULL
+  }
+
+  if (nrow(data) > 1) {
+  # Make matrix of covariate values for the observed data
+    if (is.matrix(triggering_rate)){
+      branching_matrix <- triggering_rate[data[[mark_column]], data[[mark_column]], drop = FALSE]
+    } else {
+      branching_matrix <- matrix(branching_ratio, nrow = nrow(branching_ratio), ncol = nrow(branching_ratio))
+    }
+    branching_matrix[upper.tri(branching_matrix, diag = TRUE)] <- 0
+  } else{
+    branching_matrix <- NULL
   }
 
 
 # Output object -----------------------------------------------------------
 
   structure(
-    # data[,c(covariate_columns)],
-    data |> dplyr::arrange(t),
+    data,
+    covariate_matrix = covariate_matrix,
+    branching_matrix = branching_matrix,
+    background_formula = background_formula,
+    mark_column = mark_column,
     time_window = time_window,
     spatial_region = spatial_region,
-    # params = params,
-    covariate_columns = covariate_columns,
-    mark_column = mark_column,
+    parameters = parameters,
     spatial_family = spatial_family,
     temporal_family = temporal_family,
     spatial_sampler = spatial_sampler,
@@ -159,67 +255,6 @@ hawkes <- function(data = NULL, params = NULL,
     spatial_is_separable = spatial_is_separable,
     class = c("hawkes", class(data))
   )
-}
-
-# Functions to generate a spatio-temporal Hawkes process
-#
-
-
-#' Convert an object to a hawkes
-#'
-#' @param data Data frame with columns `x`, `y`, and `t`, or an `sf` object with event
-#'   geometry and a `t` column.
-#' @param time_window Numeric vector of length two specifying the observation window.
-#' @param spatial_region `sf` object defining the spatial domain.
-#' @param spatial_family Spatial triggering kernel or list of custom kernel helpers.
-#' @param temporal_family Temporal triggering kernel or list of custom kernel helpers.
-#' @param covariate_columns Optional character vector naming background covariates.
-#' @param mark_column Optional character string naming the mark column for multivariate processes.
-#'
-#' @returns A hawkes object.
-#' @export
-#'
-#' @examples
-#' df <- data.frame(
-#'   x = runif(100, 0, 10),
-#'   y = runif(100, 0, 10),
-#'   t = runif(100, 0, 50)
-#' )
-#'
-#' # Convert to hawkes object
-#' spatial_region <- create_rectangular_sf(0, 10, 0, 10)
-#' hawkes_df <- as_hawkes(
-#'   df,
-#'   c(0, 50),
-#'   spatial_region,
-#'   spatial_family = "Gaussian",
-#'   temporal_family = "Exponential"
-#' )
-#' print(hawkes_df)
-#'
-as_hawkes <- function(data, time_window, spatial_region, spatial_family, temporal_family,
-                      covariate_columns = NULL, mark_column = NULL) {
-  if (class(data)[1] == "sf") {
-    data <- data |>
-      dplyr::mutate(
-        x = sf::st_coordinates(data)[,1],
-        y = sf::st_coordinates(data)[,2],
-        .before = t
-      )
-  } else{
-    data <- sf::st_as_sf(data, coords = c("x", "y"))
-    data <- data |>
-      dplyr::mutate(
-        x = sf::st_coordinates(data)[,1],
-        y = sf::st_coordinates(data)[,2],
-        .before = t
-      )
-  }
-
-  hawkes(data = data,
-         time_window = time_window, spatial_region = spatial_region,
-         spatial_family = spatial_family, temporal_family = temporal_family,
-         covariate_columns = covariate_columns, mark_column = mark_column)
 }
 
 
@@ -236,10 +271,20 @@ print.hawkes <- function(x, n = 10, ...) {
   cat("<hawkes object>\n\n")
   cat("Number of events:", nrow(x), "\n\n")
 
+  background_formula <- attr(x, "background_formula")
+  cat("Background Formula:")
+  print(background_formula)
+  # cat(
+  #   "\nConditional Intensity λ(s, t):\n",
+  #   sprintf("   λ(s, t) = exp{%s} + Σ g_t(t - tᵢ) · g_s(||s - sᵢ||)\n",
+  #           deparse(attr(x, "background_formula"))),
+  #   sep = ""
+  # )
+
   spatial_region <- attr(x, "spatial_region")
   time_window <- attr(x, "time_window")
-  cat("Spatial Region:\n")
-  print(spatial_region)
+  # cat("Spatial Region:\n")
+  # print(spatial_region)
 
   cat("\nTime Window:\n")
   print(time_window)
@@ -254,7 +299,7 @@ print.hawkes <- function(x, n = 10, ...) {
       cat(sprintf("    %s: %s\n", nm, toString(round(params$background_rate[[nm]], 3))))
     }
 
-    cat(sprintf(" Triggering Rate (\u03b8):   %s\n", params$triggering_rate))
+    cat(sprintf(" Branching Ratio (\u03b8):   %s\n", params$branching_ratio))
 
   spatial_family <- attr(x, "spatial_family")
   if (is.null(spatial_family)) cat("\nSpatial kernel: not specified\n") else{

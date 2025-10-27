@@ -59,19 +59,22 @@ conditional_intensity <- function(hawkes, parameters) {
   attrs <- attributes(hawkes)
 
   # Assign all attributes to variables in the function environment
+  covariate_matrix <- attrs$covariate_matrix
+  branching_matrix <- attrs$branching_matrix
+  background_formula <- attrs$background_formula
+  mark_column <- attrs$mark_column
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
-  mark_column <- attrs$mark_column
-  spatial_family    <- attrs$spatial_family
-  temporal_family    <- attrs$temporal_family
-  spatial_sampler    <- attrs$spatial_sampler
-  temporal_sampler    <- attrs$temporal_sampler
-  spatial_pdf  <- attrs$spatial_pdf
+  parameters <- attrs$parameters
+  spatial_family <- attrs$spatial_family
+  temporal_family <- attrs$temporal_family
+  spatial_sampler <- attrs$spatial_sampler
+  spatial_pdf <- attrs$spatial_pdf
+  spatial_cdf <- attrs$spatial_cdf
   temporal_pdf <- attrs$temporal_pdf
-  spatial_cdf  <- attrs$spatial_cdf
   temporal_cdf <- attrs$temporal_cdf
-  spatial_is_separable <- isTRUE(attrs$spatial_is_separable)
+  temporal_sampler <- attrs$temporal_sampler
+  spatial_is_separable <- attrs$spatial_is_separable
 
 
   background_rate <- parameters$background_rate

@@ -180,6 +180,20 @@
 
 
 
+.construct_background_covariate_matrix <- function(background_formula, data) {
+  stats::model.matrix(background_formula, data = data) |>
+    as.matrix() |>
+    {\(m) {
+      colnames(m) <- colnames(m) |>
+        stringr::str_replace("\\(Intercept\\)", "intercept") |>                 # intercept
+        stringr::str_replace_all("(?<=[A-Za-z0-9])(?=[A-Z])", "_") |>           # event_typesB -> event_types_B
+        stringr::str_replace_all(":", "__") |>                                  # interactions: varA:varB -> varA__varB
+        stringr::str_replace_all("[^A-Za-z0-9_]", "_")                          # sanitize leftovers
+      # |> stringr::str_to_lower()                                            # uncomment if you want all-lowercase
+      m
+    }}()
+}
+
 
 
 
