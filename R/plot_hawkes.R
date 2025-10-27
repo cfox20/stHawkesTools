@@ -30,23 +30,9 @@
 #' plot_hawkes(hawkes, color = "time")
 #'
 #'
-#' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-#'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.75),
-#'   temporal = list(rate = 2),
-#'   fixed = list(spatial = "mean")
-#' )
-#' data("example_background_covariates")
-#' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
-#'   spatial_burnin = 1
-#' )
+#' data(example_data)
 #'
-#' plot_hawkes(hawkes, color = "time")
+#' plot_hawkes(example_data, color = "time")
 plot_hawkes <- function(hawkes, color = "time",...) {
   # Extract all hawkes object attributes
   attrs <- attributes(hawkes)
@@ -115,24 +101,6 @@ plot_hawkes <- function(hawkes, color = "time",...) {
 #' plot_intensity(hawkes, est, stepsize = 0.25, coordinates = c(5, 5))
 #' plot_intensity(hawkes, est, stepsize = 0.25, coordinates = c(5, 5), time = 40)
 #'
-#' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-#'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.75),
-#'   temporal = list(rate = 2),
-#'   fixed = list(spatial = "mean")
-#' )
-#' data("example_background_covariates")
-#' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
-#'   spatial_burnin = 1
-#' )
-#' est <- hawkes_mle(hawkes, inits = params, boundary = c(.5, 3))
-#' plot_hawkes(hawkes)
-#' plot_intensity(hawkes, est, stepsize = 0.1, time = 40, coordinates = c(4.5, 5))
 plot_intensity <- function(hawkes, est, stepsize, time = NULL, coordinates = NULL) {
   plots <- list()
 

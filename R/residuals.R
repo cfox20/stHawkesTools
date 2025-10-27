@@ -30,33 +30,6 @@
 #' )
 #' lines(density(residuals, from = 0), col = "red")
 #'
-#' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
-#'   triggering_rate = 0.5,
-#'   spatial = list(mean = 0, sd = 0.25),
-#'   temporal = list(rate = 2),
-#'   fixed = list(spatial = "mean")
-#' )
-#' data("example_background_covariates")
-#' hawkes <- rHawkes(
-#'   params,
-#'   c(0, 50),
-#'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
-#'   spatial_burnin = 1
-#' )
-#' est <- hawkes_mle(hawkes, inits = params, boundary = 1)
-#'
-#' curve(
-#'   dexp(x, rate = 1),
-#'   from = 0,
-#'   to = 10,
-#'   lwd = 2,
-#'   xlab = "Residual",
-#'   ylab = "Density",
-#'   main = "Residual vs Exponential(1)"
-#' )
-#' lines(density(residuals, from = 0), col = "red")
 time_scaled_residuals <- function(hawkes, est) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 

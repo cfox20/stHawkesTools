@@ -115,7 +115,7 @@ conditional_intensity <- function(hawkes, parameters) {
 #' spatial_conditional_intensity(hawkes, params, 25, 0.5)
 #'
 #' params <- list(
-#'   background_rate = list(intercept = -4.5, X1 = 1, X2 = 1),
+#'   background_rate = list(intercept = -4.5, z = 1),
 #'   triggering_rate = 0.5,
 #'   spatial = list(mean = 0, sd = 0.75),
 #'   temporal = list(rate = 2),
@@ -126,7 +126,7 @@ conditional_intensity <- function(hawkes, parameters) {
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #'
