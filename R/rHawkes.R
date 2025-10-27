@@ -44,7 +44,7 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' @param time_window Numeric vector of length two giving the simulated time window.
 #' @param spatial_region `sf` object defining the simulation region.
 #' @param covariate_columns Optional character vector naming background covariates in
-#'   `spatial_region`.
+#'   `spatial_region` (and referenced in `background_formula`).
 #' @param mark_column Optional character string identifying the column used for mark effects.
 #'
 #' @importFrom stats rnorm rpois rexp runif
@@ -60,7 +60,8 @@ create_rectangular_sf <- function(xmin, xmax, ymin, ymax, covariates = NULL, n_g
 #' background_rate = list(intercept = -4, event_type = c(a = 2, b = 1))
 #'
 #' sim_background_events(background_rate, time_window, spatial_region, mark_column = "event_type")
-sim_background_events <- function(background_rate, background_formula, time_window, spatial_region, mark_column = NULL) {
+sim_background_events <- function(background_rate, background_formula, time_window, spatial_region,
+                                  mark_column = NULL, covariate_columns = NULL) {
 
   spatial_area <- spatial_region |> sf::st_area() |> sum()
   t_length <- time_window[2] - time_window[1]
@@ -81,7 +82,7 @@ sim_background_events <- function(background_rate, background_formula, time_wind
     names(mark_effects) <- names(background_rate[[mark_name]])
   }
 
-  background_rate <- as.numeric(background_rate_list)
+  background_rate <- unlist(background_rate_list, recursive = FALSE, use.names = TRUE)
 
   if (length(background_rate) == 1) {
     if (is.null(mark_effects)) {
@@ -168,13 +169,34 @@ sim_background_events <- function(background_rate, background_formula, time_wind
     }
 
   } else{
-    X <- spatial_region |>
-      sf::st_drop_geometry()
-    X <- X[,covariate_columns] |>
-      as.matrix()
-    X <- cbind(1, X)
+    region_data <- spatial_region |> sf::st_drop_geometry()
 
-    base_counts <- exp(X %*% background_rate) * t_length * spatial_region$area
+    terms_obj <- stats::terms(background_formula, specials = "mark")
+    term_labels <- attr(terms_obj, "term.labels")
+    mark_terms <- attr(terms_obj, "specials")$mark
+    if (!is.null(mark_terms) && length(mark_terms) > 0) {
+      term_labels <- term_labels[-mark_terms]
+    }
+
+    if (length(term_labels) == 0) {
+      covariate_formula <- if (attr(terms_obj, "intercept") == 0) {
+        stats::as.formula("~ 0")
+      } else {
+        stats::as.formula("~ 1")
+      }
+    } else {
+      covariate_formula <- stats::as.formula(paste("~", paste(term_labels, collapse = " + ")))
+      if (attr(terms_obj, "intercept") == 0) {
+        covariate_formula <- stats::update.formula(covariate_formula, ~ . - 1)
+      }
+    }
+
+    X <- .construct_background_covariate_matrix(covariate_formula, region_data)
+
+    beta <- background_rate[colnames(X)]
+
+    region_area <- sf::st_area(spatial_region) |> as.numeric()
+    base_counts <- as.numeric(exp(X %*% beta) * t_length * region_area)
 
     if (is.null(mark_effects)) {
       num_events <- stats::rpois(nrow(X), base_counts)
@@ -346,10 +368,10 @@ rHawkes <- function(hawkes = NULL, background_formula = ~ 1, mark_column = NULL,
     stop("hawkes must be a hawkes object or NULL.")
   }
 
-  covariates <- background_formula != (~ 1)
-
   covariate_columns <- all.vars(background_formula)
   covariate_columns <- setdiff(covariate_columns, mark_column)
+
+  covariates <- length(covariate_columns) > 0
 
   if (missing(time_window) || is.null(time_window)) {
     if (!is.null(hawkes)) {
@@ -400,9 +422,8 @@ rHawkes <- function(hawkes = NULL, background_formula = ~ 1, mark_column = NULL,
 
 
 
-
   # Check to see if covariates are included
-  covariates <- !is.null(covariate_columns)
+  covariates <- length(covariate_columns) > 0
 
   # Set burnin regions
   if (spatial_burnin > 0) {
@@ -453,7 +474,8 @@ rHawkes <- function(hawkes = NULL, background_formula = ~ 1, mark_column = NULL,
   # Generate background events
   data <- G <- sim_background_events(background_rate, background_formula = background_formula,
                                      time_window_burnin, spatial_region_burnin,
-                                     mark_column = mark_column)
+                                     mark_column = mark_column,
+                                     covariate_columns = covariate_columns)
 
 
   # Specify generation l
