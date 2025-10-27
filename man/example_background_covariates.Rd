@@ -14,9 +14,8 @@ Bounding box and covariates derived from U.S. Census Bureau data accessed via \c
 example_background_covariates
 }
 \description{
-A simple \code{sf} object with a rectangular spatial region surrounding Waco, TX.
-Three scaled covariate columns are included from U.S. Census Bureau data,
-useful for simulating background intensity in Hawkes processes.
+A simple \code{sf} object with a rectangular region and a covariate column
+\code{z} with higher values in the center of the region.
 }
 \examples{
 library("sf")

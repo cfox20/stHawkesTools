@@ -126,7 +126,7 @@ conditional_intensity <- function(hawkes, parameters) {
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = c("X1", "X2"),
+#'   covariate_columns = "z",
 #'   spatial_burnin = 1
 #' )
 #'
