@@ -1,3 +1,5 @@
+# Hello World
+
 # stHawkesTools
 
 stHawkesTools provides utilities for simulating, fitting, and diagnosing general spatio-temporal Hawkes processes. The package wraps estimation routines based on the EM algorithm together with simulation helpers, visualization utilities, and bootstrap-based uncertainty quantification to support end-to-end analysis workflows.
