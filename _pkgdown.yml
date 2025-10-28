@@ -1,21 +1,4 @@
 url: https://cfox20.github.io/stHawkesTools/
-destination: docs
 template:
   bootstrap: 5
-  bootswatch: flatly   # try cerulean, lumen, etc.
-  bslib:
-    pkgdown-nav-height: 60px
-    primary: "#154734"   # Baylor green
-    secondary: "#FFB81C" # gold accent
-
-navbar:
-  title: "stHawkesTools"
-  left:
-    - text: "Reference"
-      href: reference/
-    - text: "Articles"
-      href: articles/
-  right:
-    - icon: fab fa-github
-      href: https://github.com/cfox20/stHawkesTools
 

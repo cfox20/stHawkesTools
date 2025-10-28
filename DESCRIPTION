@@ -29,5 +29,5 @@ VignetteBuilder: knitr
 Depends: 
     R (>= 3.5)
 LazyData: true
-URL: https://github.com/cfox20/stHawkesTools
+URL: https://github.com/cfox20/stHawkesTools, https://cfox20.github.io/stHawkesTools/
 BugReports: https://github.com/cfox20/stHawkesTools/issues
