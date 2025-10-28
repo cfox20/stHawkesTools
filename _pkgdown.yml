@@ -1,4 +1,5 @@
 url: https://cfox20.github.io/stHawkesTools/
+destination: docs
 template:
   bootstrap: 5
   bootswatch: flatly   # try cerulean, lumen, etc.
@@ -11,9 +12,10 @@ navbar:
   title: "stHawkesTools"
   left:
     - text: "Reference"
-      href: reference/index.html
+      href: reference/
     - text: "Articles"
-      href: articles/index.html
+      href: articles/
   right:
     - icon: fab fa-github
       href: https://github.com/cfox20/stHawkesTools
+
