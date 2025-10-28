@@ -1,4 +1,11 @@
 url: https://cfox20.github.io/stHawkesTools/
 template:
   bootstrap: 5
-
+  bslib:
+    primary: "#004835"   # Baylor Green
+    secondary: "#FFB81C" # Baylor Gold
+    light: "#f8f9fa"
+    dark: "#002D18"
+    base_font: {google: "Lato"}
+    heading_font: {google: "Merriweather"}
+    code_font: {google: "Roboto Mono"}
