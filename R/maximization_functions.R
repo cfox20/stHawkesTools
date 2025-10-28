@@ -42,8 +42,8 @@
 
 
   -sum({parent_est_mat *
-      (.safe_log(do.call(.env$spatial_pdf, c(list(x = .env$x_diff), p))) +
-         .safe_log(do.call(.env$spatial_pdf, c(list(x = .env$y_diff), p))))
+      (.safe_log(do.call(spatial_pdf, c(list(x = x_diff), p))) +
+         .safe_log(do.call(spatial_pdf, c(list(x = y_diff), p))))
   })
 }
 
@@ -80,9 +80,9 @@
 
 
   tryCatch(-{sum(parent_est_mat *
-          .safe_log(do.call(.env$temporal_pdf, c(list(x = .env$time_diff), p)))) -
+          .safe_log(do.call(temporal_pdf, c(list(x = time_diff), p)))) -
       triggering_rate *
-      sum(do.call(.env$temporal_cdf, c(list(q = .env$time_window[2] - .env$hawkes$t), .env$p)))},
+      sum(do.call(temporal_cdf, c(list(q = time_window[2] - hawkes$t), p)))},
     error = function(e){
       stop(paste("Error in temporal parameter optimization:", e$message, "\n Last parameter values: ", p, "\n"))
     })

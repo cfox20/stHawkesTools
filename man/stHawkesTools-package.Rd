@@ -12,6 +12,7 @@ stHawkesTools is an R package for simulating, estimating, and analyzing spatio-t
 Useful links:
 \itemize{
   \item \url{https://github.com/cfox20/stHawkesTools}
+  \item \url{https://cfox20.github.io/stHawkesTools/}
   \item Report bugs at \url{https://github.com/cfox20/stHawkesTools/issues}
 }
 

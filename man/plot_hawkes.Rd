@@ -4,7 +4,7 @@
 \alias{plot_hawkes}
 \title{Plot Hawkes Process Points}
 \usage{
-plot_hawkes(hawkes, color = "time", ...)
+plot_hawkes(hawkes, color = "time", est = NULL, ...)
 }
 \arguments{
 \item{hawkes}{A \code{hawkes} object}

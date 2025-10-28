@@ -89,10 +89,13 @@ parent_est <- function(hawkes, parameters) {
 
   # Compute a matrix of the triggering intensities
   if (!spatial_is_separable) {
-    s_diff <- cbind(x_diff, y_diff)
+    s_diff <- cbind(as.numeric(x_diff), as.numeric(y_diff))
+    s_kernel <- do.call(spatial_pdf, c(list(x = s_diff), parameters$spatial)) |>
+      matrix(nrow = nrow(x_diff))
+
     g_mat <- {triggering_rate *
         do.call(temporal_pdf, c(list(x = time_diff), parameters$temporal)) *
-        do.call(spatial_pdf, c(list(x = s_diff), parameters$spatial))
+        s_kernel
     }
   } else {
     g_mat <- {triggering_rate *
@@ -314,6 +317,8 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'   spatial_burnin = 0
 #' )
 #' hawkes_mle(hawkes, inits = params, boundary = 1)
+#'
+#'
 hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose = FALSE) {
   if(class(hawkes)[1] != "hawkes") stop("hawkes must be a hawkes object")
 

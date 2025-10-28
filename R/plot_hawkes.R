@@ -33,7 +33,7 @@
 #' data(example_data)
 #'
 #' plot_hawkes(example_data, color = "time")
-plot_hawkes <- function(hawkes, color = "time",...) {
+plot_hawkes <- function(hawkes, color = "time", est = NULL,...) {
   # Extract all hawkes object attributes
   attrs <- attributes(hawkes)
 
@@ -59,12 +59,25 @@ plot_hawkes <- function(hawkes, color = "time",...) {
       ggplot2::labs(color = "Time")
   }
   if (color == "background") {
-    plot <- ggplot2::ggplot() +
-      ggplot2::geom_sf(data = spatial_region) +
-      ggplot2::geom_sf(data = hawkes |>
-                         dplyr::mutate(background = factor(.data$gen == 0, levels = c("TRUE", "FALSE"))),
-                       ggplot2::aes(color = .data$background), ...) +
-      ggplot2::labs(color = "Background Event")
+
+    if (is.null(est)) {
+      plot <- ggplot2::ggplot() +
+        ggplot2::geom_sf(data = spatial_region) +
+        ggplot2::geom_sf(data = hawkes |>
+                           dplyr::mutate(background = factor(.data$gen == 0, levels = c("TRUE", "FALSE"))),
+                         ggplot2::aes(color = .data$background), ...) +
+        ggplot2::labs(color = "Background Event")
+
+    } else{
+      parent_est <- diag(parent_est(hawkes, est))
+
+      plot <- ggplot2::ggplot() +
+        ggplot2::geom_sf(data = spatial_region) +
+        ggplot2::geom_sf(data = hawkes,
+                         ggplot2::aes(color = parent_est), ...) +
+        ggplot2::scale_color_gradient(low = "#56B1F7", high = "#132B43") +
+        ggplot2::labs(color = "Background Event")
+    }
   }
   plot
 }

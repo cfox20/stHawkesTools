@@ -101,7 +101,7 @@ hawkes <- function(data = NULL, params = NULL,
     temporal_cdf <- switch (temporal_family,
                             "Exponential" = stats::pexp,
                             "Gamma" = stats::pgamma,
-                            "Unifrom" = stats::punif,
+                            "Uniform" = stats::punif,
                             "Power Law" = ppower_law,
                             stop("Temporal family is not supported.\nUse one of the provided temporal kernels (Exponential, Gamma, Uniform, Power Law) or provide a density function to the spatial_family argument.")
     )
