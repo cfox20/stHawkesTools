@@ -9,3 +9,8 @@ template:
     base_font: {google: "Lato"}
     heading_font: {google: "Merriweather"}
     code_font: {google: "Roboto Mono"}
+navbar:
+  bg: primary
+  structure:
+    left: [reference, articles, news]
+    right: [search, github]
