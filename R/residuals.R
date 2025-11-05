@@ -41,7 +41,6 @@ time_scaled_residuals <- function(hawkes, est) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -56,6 +55,8 @@ time_scaled_residuals <- function(hawkes, est) {
   if (class(est)[1] == "hawkes_fit") {
     est <- est$est
   }
+
+  covariate_columns <- .resolve_covariate_columns(attrs, est)
 
   background_rate <- est$background_rate
   triggering_rate <- est$triggering_rate

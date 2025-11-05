@@ -53,7 +53,7 @@ parent_est <- function(hawkes, parameters) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -159,7 +159,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -330,7 +330,7 @@ hawkes_mle <- function(hawkes, inits, boundary = NULL, max_iters = 500, verbose 
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, inits)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

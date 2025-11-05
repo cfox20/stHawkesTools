@@ -32,7 +32,7 @@ extend_data_t_only <- function(hawkes, block_length_t) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -97,7 +97,7 @@ sample_blocks <- function(hawkes, num_blocks) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -187,7 +187,7 @@ block_bootstrap <- function(hawkes, est, B, num_blocks, alpha = .05, parallel = 
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, est$est)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

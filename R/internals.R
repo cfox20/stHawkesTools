@@ -40,6 +40,43 @@
 }
 
 
+#' (Internal) Resolve background covariate column names
+#'
+#' Determines the covariate columns to use when the Hawkes object does not have
+#' the `covariate_columns` attribute set. Falls back to the names of the
+#' background rate parameters (excluding any intercept term).
+#'
+#' @param attrs A list of attributes from a `hawkes` object.
+#' @param parameters Optional parameter list (e.g., inits or estimates) that
+#'   contains a `background_rate` element.
+#'
+#' @returns A character vector of covariate column names or `NULL` when no
+#'   covariates are present.
+#' @keywords internal
+.resolve_covariate_columns <- function(attrs, parameters = NULL) {
+  covariate_columns <- attrs$covariate_columns
+
+  if (is.null(covariate_columns) && !is.null(parameters)) {
+    background_rate <- parameters$background_rate
+
+    if (!is.null(background_rate)) {
+      background_names <- names(background_rate)
+
+      if (!is.null(background_names)) {
+        intercept_mask <- tolower(background_names) %in% c("intercept", "(intercept)")
+        covariate_columns <- background_names[!intercept_mask]
+
+        if (length(covariate_columns) == 0) {
+          covariate_columns <- NULL
+        }
+      }
+    }
+  }
+
+  covariate_columns
+}
+
+
 #' Flatten a nested parameter list into a numeric vector of free parameters with names
 #'
 #' @param params A nested list of parameter values, including a `$fixed` sublist.
