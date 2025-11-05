@@ -38,7 +38,7 @@ sample_clusters <- function(hawkes, parent_mat, boundary = NULL) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -189,7 +189,7 @@ cluster_bootstrap <- function(hawkes, est, B, alpha = .05, parallel = FALSE, max
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, est$est)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler

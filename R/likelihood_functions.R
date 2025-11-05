@@ -33,7 +33,7 @@ conditional_intensity <- function(hawkes, parameters) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -52,10 +52,10 @@ conditional_intensity <- function(hawkes, parameters) {
 
   background_rate <- as.numeric(background_rate)
 
-  if(!exists("covariate_columns", inherits = FALSE)){
-    X <- matrix(rep(1,nrow(hawkes)), ncol = 1)
+  if (is.null(covariate_columns)) {
+    X <- matrix(rep(1, nrow(hawkes)), ncol = 1)
   } else {
-    X <- cbind(1, hawkes[,covariate_columns, .drop = FALSE] |> sf::st_drop_geometry() |> as.matrix())
+    X <- cbind(1, hawkes[, covariate_columns, .drop = FALSE] |> sf::st_drop_geometry() |> as.matrix())
   }
 
 
@@ -146,7 +146,7 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -171,12 +171,17 @@ spatial_conditional_intensity <- function(hawkes, parameters, time, stepsize) {
   x <- sf::st_coordinates(point_grid)[,1]
   y <- sf::st_coordinates(point_grid)[,2]
 
-  X <- point_grid |>
-    sf::st_drop_geometry() |>
-    dplyr::select(tidyselect::all_of(covariate_columns))
+  covariate_values <- point_grid |>
+    sf::st_drop_geometry()
 
-  X <- cbind(1,X) |>
-    as.matrix()
+  if (is.null(covariate_columns)) {
+    X <- matrix(1, nrow = nrow(covariate_values), ncol = 1)
+  } else {
+    X <- covariate_values |>
+      dplyr::select(tidyselect::all_of(covariate_columns)) |>
+      as.matrix()
+    X <- cbind(1, X)
+  }
 
   background_rate <- parameters$background_rate
   triggering_rate <- parameters$triggering_rate
@@ -253,7 +258,7 @@ temporal_conditional_intensity <- function(hawkes, parameters, coordinates, step
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
@@ -359,7 +364,7 @@ log_likelihood <- function(hawkes, parameters) {
   # Assign all attributes to variables in the function environment
   time_window <- attrs$time_window
   spatial_region <- attrs$spatial_region
-  covariate_columns    <- attrs$covariate_columns
+  covariate_columns <- .resolve_covariate_columns(attrs, parameters)
   spatial_family    <- attrs$spatial_family
   temporal_family    <- attrs$temporal_family
   spatial_sampler    <- attrs$spatial_sampler
