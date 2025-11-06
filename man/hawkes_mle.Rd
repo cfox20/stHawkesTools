@@ -25,3 +25,35 @@ A \code{hawkes_fit} object containing the MLEs.
 \description{
 Function to estimate MLEs
 }
+\examples{
+spatial_region <- create_rectangular_sf(0, 10, 0, 10)
+
+params <- list(
+  background_rate = list(intercept = -4),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.1),
+  temporal = list(rate = 2)
+)
+hawkes <- rHawkes(params, time_window = c(0, 100), spatial_region = spatial_region)
+hawkes_mle(hawkes, inits = params)
+
+
+params <- list(
+  background_rate = list(intercept = -4.5, z = 1),
+  triggering_rate = 0.5,
+  spatial = list(mean = 0, sd = 0.75),
+  temporal = list(rate = 2),
+  fixed = list(spatial = "mean")
+)
+data("example_background_covariates")
+hawkes <- rHawkes(
+  params,
+  c(0, 50),
+  example_background_covariates,
+  covariate_columns = "z",
+  spatial_burnin = 0
+)
+hawkes_mle(hawkes, inits = params, boundary = 1)
+
+
+}

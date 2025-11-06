@@ -313,7 +313,7 @@ est_params <- function(hawkes, parameters, parent_est_mat, boundary = NULL, fixe
 #'   params,
 #'   c(0, 50),
 #'   example_background_covariates,
-#'   covariate_columns = "z,
+#'   covariate_columns = "z",
 #'   spatial_burnin = 0
 #' )
 #' hawkes_mle(hawkes, inits = params, boundary = 1)
