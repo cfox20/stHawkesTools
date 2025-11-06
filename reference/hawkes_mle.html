@@ -76,6 +76,61 @@ parameters. To fix parameters, include a <code>fixed</code> list such as
     <p>A <code>hawkes_fit</code> object containing the MLEs.</p>
     </div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">spatial_region</span> <span class="op">&lt;-</span> <span class="fu"><a href="create_rectangular_sf.html">create_rectangular_sf</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">10</span>, <span class="fl">0</span>, <span class="fl">10</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  background_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>intercept <span class="op">=</span> <span class="op">-</span><span class="fl">4</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  triggering_rate <span class="op">=</span> <span class="fl">0.5</span>,</span></span>
+<span class="r-in"><span>  spatial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">0.1</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  temporal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rate <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">hawkes</span> <span class="op">&lt;-</span> <span class="fu"><a href="rHawkes.html">rHawkes</a></span><span class="op">(</span><span class="va">params</span>, time_window <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">100</span><span class="op">)</span>, spatial_region <span class="op">=</span> <span class="va">spatial_region</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">hawkes_mle</span><span class="op">(</span><span class="va">hawkes</span>, inits <span class="op">=</span> <span class="va">params</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Background Rate (β):   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     intercept: -3.941</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Triggering Rate (θ):   0.4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Spatial Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mean: 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sd: 0.093</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Temporal Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     rate: 2.159</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="va">params</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  background_rate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>intercept <span class="op">=</span> <span class="op">-</span><span class="fl">4.5</span>, z <span class="op">=</span> <span class="fl">1</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  triggering_rate <span class="op">=</span> <span class="fl">0.5</span>,</span></span>
+<span class="r-in"><span>  spatial <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">0.75</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  temporal <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>rate <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  fixed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>spatial <span class="op">=</span> <span class="st">"mean"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="st">"example_background_covariates"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">hawkes</span> <span class="op">&lt;-</span> <span class="fu"><a href="rHawkes.html">rHawkes</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="va">params</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">50</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  <span class="va">example_background_covariates</span>,</span></span>
+<span class="r-in"><span>  covariate_columns <span class="op">=</span> <span class="st">"z"</span>,</span></span>
+<span class="r-in"><span>  spatial_burnin <span class="op">=</span> <span class="fl">0</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">hawkes_mle</span><span class="op">(</span><span class="va">hawkes</span>, inits <span class="op">=</span> <span class="va">params</span>, boundary <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Background Rate (β):   </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     intercept: -5.133</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     z: 1.188</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Triggering Rate (θ):   0.528</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Spatial Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     mean: 0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     sd: 0.739</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Temporal Triggering Parameter Estimates:</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     rate: 1.687</span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 

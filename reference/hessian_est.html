@@ -85,17 +85,17 @@ column names are matched to the flattened parameter vector.</p>
 <span class="r-in"><span><span class="va">est</span> <span class="op">&lt;-</span> <span class="fu"><a href="hawkes_mle.html">hawkes_mle</a></span><span class="op">(</span><span class="va">hawkes</span>, inits <span class="op">=</span> <span class="va">params</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">hessian_est</span><span class="op">(</span><span class="va">hawkes</span>, <span class="va">est</span><span class="op">$</span><span class="va">est</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                           background_rate.intercept triggering_rate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> background_rate.intercept              0.0123265386   -1.752065e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> triggering_rate                       -0.0017520652    2.711094e-03</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.mean                           0.0001153376   -4.645558e-05</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.sd                            -0.0010785647    4.440807e-04</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> temporal.rate                          0.0067371562   -2.910799e-03</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> background_rate.intercept              0.0177373325   -0.0029001104</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> triggering_rate                       -0.0029001104    0.0035683583</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.mean                          -0.0005931944    0.0002289469</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.sd                            -0.0014973329    0.0005710269</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> temporal.rate                          0.0082045070   -0.0033010719</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                            spatial.mean    spatial.sd temporal.rate</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> background_rate.intercept  1.153376e-04 -0.0010785647   0.006737156</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> triggering_rate           -4.645558e-05  0.0004440807  -0.002910799</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.mean               2.680588e-03 -0.0003375261  -0.001146887</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.sd                -3.375261e-04  0.0019297314   0.001698592</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> temporal.rate             -1.146887e-03  0.0016985918   0.117333851</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> background_rate.intercept -0.0005931944 -0.0014973329  0.0082045070</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> triggering_rate            0.0002289469  0.0005710269 -0.0033010719</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.mean               0.0031028638  0.0005055939 -0.0008694766</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> spatial.sd                 0.0005055939  0.0018952644  0.0005997227</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> temporal.rate             -0.0008694766  0.0005997227  0.0666724667</span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
